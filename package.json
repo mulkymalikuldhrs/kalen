@@ -1,0 +1,41 @@
+{
+  "name": "kalen",
+  "version": "0.1.0",
+  "private": true,
+  "description": "KALEN — Kinetic Autonomous Layer for Entity Networking",
+  "license": "AGPL-3.0",
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "test:e2e": "turbo run test:e2e",
+    "typecheck": "turbo run typecheck",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "db:migrate": "pnpm --filter @kalen/server db:migrate",
+    "db:seed": "pnpm --filter @kalen/server db:seed",
+    "infra:up": "docker compose -f infra/docker/docker-compose.yml up -d",
+    "infra:down": "docker compose -f infra/docker/docker-compose.yml down",
+    "infra:logs": "docker compose -f infra/docker/docker-compose.yml logs -f"
+  },
+  "dependencies": {
+    "@simplewebauthn/server": "^13.0.0",
+    "jose": "^5.9.0"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.0.0",
+    "@commitlint/config-conventional": "^19.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-import": "^2.29.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^15.0.0",
+    "prettier": "^3.3.0",
+    "prettier-plugin-tailwindcss": "^0.6.0",
+    "turbo": "^2.3.0",
+    "typescript": "^5.7.0"
+  }
+}

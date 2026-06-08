@@ -1,0 +1,18 @@
+# LiveKit Server Configuration
+# KALEN WebRTC SFU
+
+port: 7880
+rtc:
+  port_range_start: 7882
+  port_range_end: 7882
+  use_external_ip: true
+  node_ip: ""
+
+keys:
+  devkey: devsecret
+
+room:
+  auto_create: true
+  max_participants: 50
+
+recording: false

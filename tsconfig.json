@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "@kalen/shared": ["./packages/shared/src"],
+      "@kalen/identity": ["./packages/identity/src"],
+      "@kalen/mcp-gateway": ["./packages/mcp-gateway/src"],
+      "@kalen/a2a-router": ["./packages/a2a-router/src"]
+    }
+  },
+  "include": [
+    "packages/*/src/**/*.ts"
+  ],
+  "exclude": ["node_modules", "dist", ".next", "apps"]
+}

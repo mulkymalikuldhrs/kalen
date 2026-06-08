@@ -1,0 +1,195 @@
+version: "3.9"
+
+# KALEN Local Development Stack
+# Usage: docker compose -f infra/docker/docker-compose.yml up -d
+
+services:
+  # ── API Gateway ─────────────────────────────────────────────
+  traefik:
+    image: traefik:v3.2
+    container_name: kalen-traefik
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+    networks:
+      - kalen-net
+
+  # ── PostgreSQL 16 + pgvector ────────────────────────────────
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: kalen-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-kalen}
+      POSTGRES_USER: ${POSTGRES_USER:-kalen}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kalen_dev}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kalen}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kalen-net
+
+  # ── Redis 7 ──────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: kalen-redis
+    command: redis-server --requirepass ${REDIS_PASSWORD:-kalen_dev}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-kalen_dev}", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kalen-net
+
+  # ── NATS (JetStream) ────────────────────────────────────────
+  nats:
+    image: nats:2-alpine
+    container_name: kalen-nats
+    command: "--jetstream --store_dir /data"
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    volumes:
+      - nats-data:/data
+    networks:
+      - kalen-net
+
+  # ── MinIO (S3-compatible object storage) ─────────────────────
+  minio:
+    image: minio/minio:latest
+    container_name: kalen-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-kalen_dev}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-kalen_dev_secret}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kalen-net
+
+  # ── Elasticsearch 8 ──────────────────────────────────────────
+  elasticsearch:
+    image: elasticsearch:8.15.0
+    container_name: kalen-elasticsearch
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kalen-net
+
+  # ── LiveKit (WebRTC SFU) ────────────────────────────────────
+  livekit:
+    image: livekit/livekit-server:latest
+    container_name: kalen-livekit
+    command: --config /etc/livekit.yaml
+    ports:
+      - "7880:7880"
+      - "7881:7881"
+      - "7882:7882/udp"
+    volumes:
+      - ./livekit/livekit.yaml:/etc/livekit.yaml:ro
+    networks:
+      - kalen-net
+
+  # ── coturn (TURN server) ─────────────────────────────────────
+  coturn:
+    image: coturn/coturn:latest
+    container_name: kalen-coturn
+    network_mode: host
+    volumes:
+      - ./coturn/turnserver.conf:/etc/turnserver.conf:ro
+
+  # ── Prometheus ───────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: kalen-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - kalen-net
+
+  # ── Grafana ──────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:latest
+    container_name: kalen-grafana
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./monitoring/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+      - ./monitoring/grafana/dashboard-providers.yml:/etc/grafana/provisioning/dashboards/providers.yml:ro
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards/json:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - kalen-net
+
+  # ── Loki ─────────────────────────────────────────────────────
+  loki:
+    image: grafana/loki:latest
+    container_name: kalen-loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./monitoring/loki/loki-config.yml:/etc/loki/config.yml:ro
+      - loki-data:/loki
+    networks:
+      - kalen-net
+
+volumes:
+  postgres-data:
+  redis-data:
+  minio-data:
+  nats-data:
+  es-data:
+  prometheus-data:
+  grafana-data:
+  loki-data:
+
+networks:
+  kalen-net:
+    driver: bridge

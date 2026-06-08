@@ -1,0 +1,79 @@
+# ══════════════════════════════════════════════════════════════════
+# KALEN — Kinetic Autonomous Layer for Entity Networking
+# Comprehensive .gitignore
+# ══════════════════════════════════════════════════════════════════
+
+# ─── Node.js ─────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-store/
+
+# ─── Build Outputs ───────────────────────────────────────────────
+dist/
+build/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+
+# ─── Environment & Secrets ───────────────────────────────────────
+.env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+*.pem
+*.key
+*.crt
+*.p12
+*.jks
+acme.json
+
+# ─── IDE ─────────────────────────────────────────────────────────
+.vscode/
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ─── Testing ─────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+junit.xml
+
+# ─── Database ────────────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+db/*.db
+
+# ─── Docker ──────────────────────────────────────────────────────
+docker-compose.override.yml
+
+# ─── Go (if any Go tooling is used) ─────────────────────────────
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+vendor/
+
+# ─── Misc ────────────────────────────────────────────────────────
+.cache/
+.temp/
+.tmp/
+*.log
+*.pid
+*.seed
+*.bak

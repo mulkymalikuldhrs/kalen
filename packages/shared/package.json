@@ -1,0 +1,23 @@
+{
+  "name": "@kalen/shared",
+  "version": "0.1.0",
+  "description": "KALEN shared types, protocols, and utilities",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./types/*": "./src/types/*.ts",
+    "./utils/*": "./src/utils/*.ts"
+  },
+  "license": "AGPL-3.0",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}
