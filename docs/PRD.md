@@ -60,11 +60,13 @@ KALEN is built on four open-standard pillars, each addressing a distinct archite
 | Research paper & architecture specification | **Complete** | 18,000-word research paper with 12-layer validation |
 | Project structure & repository skeleton | **Complete** | Monorepo structure defined with pnpm workspaces |
 | Docker infrastructure configs | **Partial** | Docker Compose, Traefik, LiveKit, PostgreSQL, Redis, MinIO, NATS configs exist |
-| Running application code | **Not started** | No production code deployed |
-| Protocol integrations (MCP, A2A) | **Not started** | Architecture designed; SDK integration pending |
-| WebAuthn authentication | **Not started** | Flow specified; implementation pending |
+| Library packages (@kalen/shared, identity, mcp-gateway, a2a-router) | **Implemented** | All 4 packages implemented with real Ed25519 crypto, 379 tests passing |
+| API server (apps/server) | **Implemented** | NestJS server with auth, identity, messaging, MCP, A2A modules; in-memory stores |
+| Web client (apps/web) | **Implemented** | Next.js 15 app with 10 pages, 17 components; simulated API data |
+| Protocol integrations (MCP, A2A) | **Partial** | Library code implemented; tool handlers and external integrations are stubs |
+| WebAuthn authentication | **Partial** | Helper functions implemented; server controllers exist; needs real DB persistence |
 | Agent runtime | **Not started** | Hierarchy and constitutional prompts defined; runtime not built |
-| Database schema | **Specified** | SQL DDL written; migrations not executed against live DB |
+| Database schema | **Partial** | TypeORM entities defined; in-memory stores used; no migrations executed |
 
 ### 1.4 Vision Statement
 

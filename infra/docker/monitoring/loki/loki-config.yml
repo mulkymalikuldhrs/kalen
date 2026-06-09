@@ -1,0 +1,110 @@
+# Loki Configuration
+# KALEN Log Aggregation Service
+#
+# This is a minimal single-binary configuration suitable for
+# local development and small deployments. For production,
+# consider running Loki in microservices mode with object
+# storage (S3, GCS) instead of local filesystem.
+#
+# Docs: https://grafana.com/docs/loki/latest/configuration/
+
+auth_enabled: false
+
+server:
+  # HTTP listen port
+  http_listen_port: 3100
+  # gRPC listen port
+  grpc_listen_port: 9096
+  # Log level: debug | info | warn | error
+  log_level: info
+
+common:
+  instance_addr: 127.0.0.1
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+query_range:
+  # Cache query results for 15 minutes
+  results_cache:
+    cache:
+      embedded_cache:
+        enabled: true
+        max_size_mb: 100
+
+schema_config:
+  configs:
+    - from: 2024-01-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+storage_config:
+  filesystem:
+    directory: /loki/storage
+  # TSDB index configuration (replaces boltdb-shipper for newer Loki)
+  tsdb_shipper:
+    active_index_directory: /loki/tsdb-index
+    cache_location: /loki/tsdb-cache
+    cache_ttl: 24h
+
+ingester:
+  # Chunk encoding: snappy is the default and most compatible
+  chunk_encoding: snappy
+  # Maximum chunk age before flushing to storage
+  max_chunk_age: 1h
+  # Chunk idle period before flushing
+  chunk_idle_period: 5m
+  # Chunk target size (1.5 MB)
+  chunk_target_size: 1572864
+  # Maximum chunk retain period
+  chunk_retain_period: 30s
+  # WAL configuration for durability
+  wal:
+    dir: /loki/wal
+    enabled: true
+    flush_on_shutdown: true
+
+limits_config:
+  # Reject old samples (older than 1 hour from now)
+  reject_old_samples: true
+  reject_old_samples_max_age: 1h
+  # Maximum query length (30 days)
+  max_query_length: 720h
+  # Maximum query parallelism
+  max_query_parallelism: 32
+  # Maximum entries per query
+  max_entries_limit_per_query: 5000
+  # Ingestion rate limit (10 MB/s per tenant)
+  ingestion_rate_mb: 10
+  # Ingestion burst limit (20 MB)
+  ingestion_burst_size_mb: 20
+  # Per-stream rate limit (5 MB/s)
+  per_stream_rate_limit: 5MB
+  # Cardinality limit
+  max_streams_per_user: 0
+  # Maximum label name length
+  max_label_name_length: 1024
+  # Maximum label value length
+  max_label_value_length: 2048
+
+compactor:
+  working_directory: /loki/compactor
+  compaction_interval: 10m
+  # Retention period — delete logs older than 30 days
+  retention_enabled: true
+  retention_deletes_enabled: true
+  retention_work_interval: 1h
+  delete_request_store: filesystem
+
+analytics:
+  reporting_enabled: false

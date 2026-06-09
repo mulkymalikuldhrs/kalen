@@ -21,6 +21,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/traefik-dynamic.yml:/etc/traefik/traefik-dynamic.yml:ro
     networks:
       - kalen-net
 
@@ -49,11 +50,12 @@ services:
   redis:
     image: redis:7-alpine
     container_name: kalen-redis
-    command: redis-server --requirepass ${REDIS_PASSWORD:-kalen_dev}
+    command: redis-server /etc/redis/redis.conf
     ports:
       - "6379:6379"
     volumes:
       - redis-data:/data
+      - ./redis/redis.conf:/etc/redis/redis.conf:ro
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-kalen_dev}", "ping"]
       interval: 5s
@@ -66,12 +68,13 @@ services:
   nats:
     image: nats:2-alpine
     container_name: kalen-nats
-    command: "--jetstream --store_dir /data"
+    command: "--config /etc/nats/nats.conf"
     ports:
       - "4222:4222"
       - "8222:8222"
     volumes:
       - nats-data:/data
+      - ./nats/nats.conf:/etc/nats/nats.conf:ro
     networks:
       - kalen-net
 

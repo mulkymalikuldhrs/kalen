@@ -15,9 +15,13 @@
     "dev": "tsc --watch",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
+    "test": "jest --config jest.config.ts",
     "clean": "rm -rf dist"
   },
   "devDependencies": {
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "jest": "^30.0.0",
+    "ts-jest": "^29.0.0",
+    "@types/jest": "^30.0.0"
   }
 }

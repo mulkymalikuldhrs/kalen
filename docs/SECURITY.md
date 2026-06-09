@@ -1,32 +1,36 @@
 # KALEN Security Policy
 
 **Author:** Mulky Malikul Dhaher (mulkymalikuldhr@mail.com)
-**Last Updated:** 2026-06-09
+**Last Updated:** 2026-06-10
 
-> **Honesty notice:** KALEN is pre-alpha software. None of the security features described in this document are implemented yet. This policy describes our security goals and architecture, not current capabilities. See the "Current Security Status" section for what actually exists today.
+> **Honesty notice:** KALEN is pre-alpha software. Core cryptographic operations (Ed25519, JWT, RBAC) are now implemented and tested, but the system is not yet production-ready. Many security features remain as stubs. See the "Current Security Status" section for what actually exists today.
 
 ---
 
 ## Current Security Status
 
-**As of 2026-06-09, KALEN has no implemented security features.** The following are facts, not aspirations:
+**As of 2026-06-10, KALEN has implemented core cryptographic operations but is not yet a secure production system.** The following are facts, not aspirations:
 
-| Item | Status |
-|------|--------|
-| WebAuthn authentication | ❌ Not implemented |
-| Ed25519 agent authentication | ❌ Not implemented |
-| JWT token issuance and validation | ❌ Not implemented |
-| RBAC with deny-first policy engine | ❌ Not implemented |
-| MCP tool allowlists | ❌ Not implemented |
-| MCP output sanitization | ❌ Not implemented |
-| A2A agent card signing | ❌ Not implemented |
-| Audit logging | ❌ Not implemented |
+| Item | Status | Notes |
+|------|--------|-------|
+| Ed25519 agent authentication | ✅ Implemented | Real Ed25519 via @noble/ed25519 — sign, verify, fromPrivateKey all functional |
+| A2A agent card signing/verification | ✅ Implemented | Uses @kalen/identity Ed25519Signer — real cryptographic signatures |
+| JWT token issuance and validation | ✅ Implemented | Human and agent tokens with entity type embedding, refresh support |
+| RBAC with deny-first policy engine | ✅ Implemented | Role/Permission enums, checkPermission, evaluateAccess, checkScope |
+| WebAuthn helper functions | ✅ Implemented | generateRegistrationOptions, verifyRegistrationResponse, generateAuthenticationOptions, verifyAuthenticationResponse |
+| Agent (ai) suffix enforcement | ✅ Implemented | validateAgentName enforces suffix; checkSuffixEnforcement in verification |
+| MCP tool allowlists | ✅ Implemented | AllowList with permissive/restrictive modes, global deny list |
+| MCP tool output sanitization | ❌ Not implemented | Tool outputs not yet sanitized for prompt injection |
+| Audit logging | ⚠️ In-memory only | Audit events logged but stored in-memory, not PostgreSQL |
+| Challenge store | ⚠️ In-memory only | InMemoryChallengeStore — needs Redis backing |
+| Rate limiting | ⚠️ In-memory only | In-memory per-IP rate limiting — needs Redis for production |
 | TLS termination at Traefik | ⚠️ Config exists but not verified in production |
-| Rate limiting | ❌ Not implemented |
-| Data encryption at rest | ❌ Not implemented |
-| Docker Compose default passwords | ⚠️ Uses `kalen_dev` — development only |
+| Data encryption at rest | ❌ Not implemented | |
+| OAuth 2.1 / PKCE for A2A | ❌ Not implemented | |
+| mTLS for inter-service | ❌ Not implemented | |
+| End-to-end encryption | ❌ Not implemented | |
 
-**Do not deploy KALEN in any environment where security matters.** This is scaffolding code with infrastructure configs. There is no application to secure yet.
+**Do not deploy KALEN in any environment where security matters.** While core cryptographic primitives are real and tested, the system lacks production-grade persistence, rate limiting, and external service integration.
 
 ---
 
@@ -34,7 +38,8 @@
 
 | Version | Supported | Notes |
 | ------- | --------- | ----- |
-| 0.1.0-alpha.1 | ❌ No | Pre-alpha scaffold — no security features |
+| 0.2.0-alpha.1 | ⚠️ Best effort | Core crypto implemented; persistence and integration are stubs |
+| 0.1.0-alpha.1 | ❌ No | Pre-alpha scaffold — fake crypto (simpleHash) |
 | < 1.0.0 (any alpha/beta) | ⚠️ Best effort | Security patches applied, but no SLA |
 | ≥ 1.0.0 | ✅ Yes | Full security support per this policy |
 
@@ -105,9 +110,9 @@ We use the [Common Vulnerability Scoring System (CVSS) v3.1](https://www.first.o
 
 ---
 
-## Security Architecture (Planned)
+## Security Architecture (Planned + Implemented)
 
-The following describes the security architecture that will be implemented as the project progresses. **None of this is currently running code.**
+The following describes the security architecture. Items marked ✅ are implemented and tested; items marked ⚠️ are partially implemented; items marked ❌ are not yet implemented.
 
 ### 1. Dual-Identity Model
 
@@ -115,27 +120,27 @@ KALEN's security model is built on the principle that humans and agents are fund
 
 #### Human Identity (WebAuthn / FIDO2)
 
-| Property | Value |
-|----------|-------|
-| Authentication | WebAuthn passkeys (biometric + device-bound) |
-| Credential storage | Public key + credential ID + counter + transports only |
-| Private key location | Never leaves the authenticator device |
-| Session token | JWT, 15 min access / 7 day refresh |
-| Recovery | 24-word BIP39 phrase, rate-limited to 3 attempts per 24h |
-| Phishing resistance | Cryptographic binding to Relying Party origin |
+| Property | Value | Status |
+|----------|-------|--------|
+| Authentication | WebAuthn passkeys (biometric + device-bound) | ✅ Helper functions implemented |
+| Credential storage | Public key + credential ID + counter + transports only | ⚠️ In-memory in server; TypeORM entity defined |
+| Private key location | Never leaves the authenticator device | ✅ By design |
+| Session token | JWT, 15 min access / 7 day refresh | ✅ Implemented |
+| Recovery | 24-word BIP39 phrase, rate-limited to 3 attempts per 24h | ❌ Not implemented |
+| Phishing resistance | Cryptographic binding to Relying Party origin | ✅ By design (WebAuthn spec) |
 
 **Why no passwords?** Passwords are the #1 attack vector (credential stuffing, phishing, reuse). WebAuthn eliminates this entire class of attacks by replacing shared secrets with public-key cryptography.
 
 #### Agent Identity (Ed25519 Keypair)
 
-| Property | Value |
-|----------|-------|
-| Authentication | Ed25519 signature over timestamped challenge |
-| Credential storage | Public key + manifest in PostgreSQL |
-| Private key location | Encrypted at rest in agent runtime; never transmitted |
-| Session token | JWT, 24h TTL, entity type embedded |
-| Mandatory suffix | Display name must end with `(ai)` — enforced at application level |
-| Scope | Manifest-defined capabilities + RBAC permissions |
+| Property | Value | Status |
+|----------|-------|--------|
+| Authentication | Ed25519 signature over timestamped challenge | ✅ **Real Ed25519** via @noble/ed25519 |
+| Credential storage | Public key + manifest in PostgreSQL | ⚠️ TypeORM entity defined; in-memory in services |
+| Private key location | Encrypted at rest in agent runtime; never transmitted | ✅ By design |
+| Session token | JWT, 24h TTL, entity type embedded | ✅ Implemented |
+| Mandatory suffix | Display name must end with `(ai)` — enforced at application level | ✅ Implemented and tested |
+| Scope | Manifest-defined capabilities + RBAC permissions | ✅ Implemented (manifest + RBAC) |
 
 **Why `(ai)` suffix?** Without mandatory, enforced visual distinction, agents can impersonate humans. The suffix is a non-negotiable, application-enforced requirement that makes agent participation transparent in any context.
 
@@ -158,73 +163,63 @@ KALEN's security model is built on the principle that humans and agents are fund
 ```
 
 **Token lifecycle:**
-- Access token: 15 minutes (humans), 24 hours (agents)
-- Refresh token: 7 days (humans only; agents re-authenticate with keypair)
-- Token revocation: supported via Redis deny-list
-- Entity type in JWT enables server-side enforcement: an agent token cannot access human-only endpoints, and vice versa
+- Access token: 15 minutes (humans), 24 hours (agents) — ✅ Implemented
+- Refresh token: 7 days (humans only; agents re-authenticate with keypair) — ✅ Implemented
+- Token revocation: ⚠️ In-memory deny-list only (needs Redis)
+- Entity type in JWT enables server-side enforcement — ✅ Implemented
 
 ### 3. MCP Gateway Security
 
-| Layer | Mechanism | Purpose |
-|-------|-----------|---------|
-| **Authentication** | Agent JWT validation | Only authenticated agents can invoke tools |
-| **Authorization** | Per-agent tool allowlist | Agents can only invoke tools they are scoped for |
-| **Scope validation** | Capability validator | Tool calls checked against agent manifest |
-| **Rate limiting** | Redis-backed, per-agent per-tool | Prevent tool abuse |
-| **Output sanitization** | Prompt injection detection | Strip or redact tool outputs containing prompt injection patterns |
-| **Audit logging** | NATS event → PostgreSQL | Every invocation logged with agent ID, tool, input hash, output hash, latency |
-| **Caching** | Redis, idempotent results only | Reduce redundant tool calls |
+| Layer | Mechanism | Status |
+|-------|-----------|--------|
+| **Authentication** | Agent JWT validation | ✅ Implemented |
+| **Authorization** | Per-agent tool allowlist | ✅ Implemented (AllowList with permissive/restrictive modes) |
+| **Scope validation** | Capability validator | ⚠️ RBAC check exists; capability-validator not separate |
+| **Rate limiting** | In-memory, per-agent per-tool | ⚠️ In-memory only (needs Redis) |
+| **Output sanitization** | Prompt injection detection | ❌ Not implemented |
+| **Audit logging** | In-memory audit events | ⚠️ Events logged but not persisted |
+| **Caching** | Not yet implemented | ❌ Not implemented |
 
 ### 4. A2A Router Security
 
-| Layer | Mechanism | Purpose |
-|-------|-----------|---------|
-| **Agent Card signing** | Ed25519 signature on Agent Card | Verify card authenticity and integrity |
-| **Card verification** | Signature check against registered public key | Reject tampered or forged cards |
-| **Task authorization** | Requester permission check | Only authorized agents can delegate tasks |
-| **OAuth 2.1 + PKCE** | For inter-deployment A2A | Secure authorization between KALEN instances |
-| **mTLS** | Enterprise deployment option | Mutual TLS for agent-to-agent communication in controlled environments |
-| **Rate limiting** | Per-agent on A2A endpoints | Prevent task flooding |
+| Layer | Mechanism | Status |
+|-------|-----------|--------|
+| **Agent Card signing** | Ed25519 signature on Agent Card | ✅ **Real Ed25519** via @kalen/identity |
+| **Card verification** | Signature check against registered public key | ✅ **Real Ed25519** verification |
+| **Task authorization** | Requester permission check | ✅ Implemented |
+| **OAuth 2.1 + PKCE** | For inter-deployment A2A | ❌ Not implemented |
+| **mTLS** | Enterprise deployment option | ❌ Not implemented |
+| **Rate limiting** | Per-agent on A2A endpoints | ⚠️ In-memory only |
 
 ### 5. Audit Trail
 
-Every significant security event is logged to an append-only, signed audit trail:
-
-| Event Category | Examples |
-|---------------|---------|
-| Identity | Registration, authentication, key rotation, revocation |
-| Agent | Creation, scope change, manifest update, key rotation |
-| Access | Permission grant, permission deny, RBAC policy change |
-| MCP | Tool invocation, allowlist change, rate limit hit |
-| A2A | Task delegation, task completion, card verification failure |
-| Admin | User ban, agent revocation, configuration change |
-
-**Audit log properties:**
-- **Append-only** — no DELETE or UPDATE operations permitted
-- **Signed** — each entry signed with Ed25519 for tamper detection
-- **Searchable** — by actor, action type, date range, entity type
-- **Retained** — 7-year retention for compliance (configurable)
+| Property | Status |
+|----------|--------|
+| Append-only, no DELETE/UPDATE | ⚠️ By design, but only in-memory currently |
+| Signed entries (Ed25519) | ❌ Not yet implemented |
+| Searchable | ❌ Not yet implemented (needs PostgreSQL) |
+| 7-year retention | ❌ Not yet implemented |
 
 ### 6. Transport Security
 
-| Layer | Mechanism |
-|-------|-----------|
-| **TLS termination** | Traefik v3 handles TLS 1.3; internal services communicate over plain HTTP within Docker network |
-| **WebRTC media** | DTLS-SRTP mandatory encryption for all audio/video |
-| **WebSocket** | WSS via Traefik TLS termination |
-| **Internal service communication** | Docker network isolation; no TLS between services (same host) |
+| Layer | Status |
+|-------|--------|
+| TLS termination at Traefik | ⚠️ Config exists but not verified in production |
+| WebRTC media (DTLS-SRTP) | ❌ Not implemented (no LiveKit integration) |
+| WebSocket (WSS) | ⚠️ Config exists, not verified |
+| Internal service communication | ⚠️ Docker network isolation only |
 
 ### 7. Data Security
 
-| Data Type | Protection |
-|-----------|-----------|
-| WebAuthn public keys | Stored in PostgreSQL; public keys only, no secrets |
-| Agent private keys | Encrypted at rest (AES-256); decrypted in agent runtime memory only |
-| JWT secrets | Server-side only, injected via environment variables |
-| User messages | Stored in PostgreSQL (KALEN envelope) + MongoDB (OpenIM) |
-| Files | Stored in MinIO; access via presigned URLs with TTL |
-| Audit logs | PostgreSQL, append-only, signed |
-| Session state | Redis, TTL-enforced |
+| Data Type | Protection | Status |
+|-----------|-----------|--------|
+| WebAuthn public keys | PostgreSQL (entity defined, in-memory currently) | ⚠️ |
+| Agent private keys | Should be encrypted at rest | ❌ |
+| JWT secrets | Server-side environment variables | ✅ By design |
+| User messages | PostgreSQL (entity defined, in-memory currently) | ⚠️ |
+| Files | MinIO via presigned URLs | ❌ Not implemented |
+| Audit logs | PostgreSQL append-only (entity defined, in-memory) | ⚠️ |
+| Session state | Redis (needs wiring) | ❌ |
 
 ---
 
@@ -255,7 +250,7 @@ When contributing to KALEN, follow these security practices:
 
 ### Cryptography
 
-- **Use well-audited libraries** — `@simplewebauthn/server` for WebAuthn, `tweetnacl` for Ed25519
+- **Use well-audited libraries** — `@simplewebauthn/server` for WebAuthn, `@noble/ed25519` for Ed25519
 - **Never implement custom crypto** — do not write your own encryption, hashing, or signing
 - **Use constant-time comparison** — for signature verification and token comparison
 - **Use secure random** — `crypto.randomBytes()` for challenges, tokens, and salts
@@ -266,23 +261,25 @@ When contributing to KALEN, follow these security practices:
 
 | Phase | Security Feature | Status |
 |-------|-----------------|--------|
-| Phase 1 | WebAuthn registration and authentication | Planned |
-| Phase 1 | Ed25519 agent keypair and JWT | Planned |
-| Phase 1 | `(ai)` suffix enforcement | Planned |
-| Phase 1 | RBAC deny-first policy engine | Planned |
-| Phase 1 | Audit logging (identity events) | Planned |
-| Phase 2 | MCP tool allowlists | Planned |
-| Phase 2 | MCP output sanitization | Planned |
-| Phase 2 | Rate limiting (API endpoints) | Planned |
-| Phase 2 | Account recovery (BIP39) | Planned |
-| Phase 3 | A2A agent card signing/verification | Planned |
-| Phase 3 | OAuth 2.1 with PKCE | Planned |
-| Phase 3 | SSE streaming security | Planned |
-| Phase 4 | mTLS for enterprise deployment | Planned |
-| Phase 4 | End-to-end encryption (Matrix bridge) | Planned |
-| Phase 5 | Penetration testing | Planned |
-| Phase 5 | Security audit (external) | Planned |
-| Phase 7 | SOC 2 Type I compliance roadmap | Planned |
+| Phase 0 | ~~Ed25519 agent keypair~~ (was fake) | ✅ Fixed — now real @noble/ed25519 |
+| Phase 1 | Ed25519 agent keypair and JWT | ✅ Implemented |
+| Phase 1 | WebAuthn registration and authentication | ✅ Helper functions implemented |
+| Phase 1 | `(ai)` suffix enforcement | ✅ Implemented |
+| Phase 1 | RBAC deny-first policy engine | ✅ Implemented |
+| Phase 1 | Audit logging (identity events) | ⚠️ In-memory only |
+| Phase 1 | Wire challenge store to Redis | ❌ Not implemented |
+| Phase 2 | MCP tool allowlists | ✅ Implemented |
+| Phase 2 | MCP output sanitization | ❌ Not implemented |
+| Phase 2 | Rate limiting (Redis-backed API endpoints) | ❌ Not implemented (in-memory) |
+| Phase 2 | Account recovery (BIP39) | ❌ Not implemented |
+| Phase 3 | A2A agent card signing/verification | ✅ Implemented |
+| Phase 3 | OAuth 2.1 with PKCE | ❌ Not implemented |
+| Phase 3 | SSE streaming security | ❌ Not implemented |
+| Phase 4 | mTLS for enterprise deployment | ❌ Not implemented |
+| Phase 4 | End-to-end encryption (Matrix bridge) | ❌ Not implemented |
+| Phase 5 | Penetration testing | ❌ Not implemented |
+| Phase 5 | Security audit (external) | ❌ Not implemented |
+| Phase 7 | SOC 2 Type I compliance roadmap | ❌ Not implemented |
 
 ---
 

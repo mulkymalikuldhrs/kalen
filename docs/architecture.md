@@ -13,11 +13,14 @@
 3. [ADR-003: WebAuthn over OAuth2 for Human Authentication](#adr-003-webauthn-over-oauth2-for-human-authentication)
 4. [ADR-004: MCP (Model Context Protocol) for Tool Integration](#adr-004-mcp-model-context-protocol-for-tool-integration)
 5. [ADR-005: A2A (Agent-to-Agent Protocol) for Agent Coordination](#adr-005-a2a-agent-to-agent-protocol-for-agent-coordination)
-6. [ADR-006: Go for Backend Services, TypeScript for Frontend and Edge](#adr-006-go-for-backend-services-typescript-for-frontend-and-edge)
+6. [ADR-006: Go for Backend Services, TypeScript for Frontend and Edge (Superseded)](#adr-006-go-for-backend-services-typescript-for-frontend-and-edge)
 7. [ADR-007: PostgreSQL with pgvector for Relational and Vector Data](#adr-007-postgresql-with-pgvector-for-relational-and-vector-data)
 8. [ADR-008: NATS JetStream for Event Backbone](#adr-008-nats-jetstream-for-event-backbone)
 9. [ADR-009: Ed25519 Keypairs for Agent Authentication](#adr-009-ed25519-keypairs-for-agent-authentication)
 10. [ADR-010: Dual Authentication Convergence on JWT](#adr-010-dual-authentication-convergence-on-jwt)
+11. [ADR-011: TypeScript/NestJS for Backend Services (Supersedes ADR-006)](#adr-011-typescriptnestjs-for-backend-services-supersedes-adr-006)
+12. [ADR-012: Next.js 15 for Web Client](#adr-012-nextjs-15-for-web-client)
+13. [ADR-013: @noble/ed25519 for Ed25519 Cryptography](#adr-013-nobleed25519-for-ed25519-cryptography)
 
 ---
 
@@ -493,7 +496,9 @@ We choose **A2A (Agent-to-Agent Protocol)** for agent-to-agent coordination in K
 
 ### Status
 
-**Accepted** — 2026-06-08
+**Superseded** — 2026-06-10 (originally accepted 2026-06-08)
+
+> **Revision note:** Implementation proceeded with TypeScript (NestJS) for backend services instead of Go. See ADR-011 for the revised decision. This ADR is retained for historical context.
 
 ### Context
 
@@ -601,6 +606,126 @@ The options for frontend were: TypeScript (React/Next.js), Python (HTMX), Go (te
 - **Python (backend):** Rejected because of GIL limitations for concurrent I/O, higher memory footprint, slower cold start, and lack of alignment with OpenIM (Go).
 - **Java (backend):** Rejected because of higher memory footprint, slower cold start, GC pause concerns, and framework complexity (Spring Boot is powerful but heavy). Java is a good choice for enterprise systems with established Java teams, but KALEN does not have that constraint.
 - **Node.js/TypeScript (backend):** Rejected because JavaScript's single-threaded model requires careful async programming for concurrent I/O, and Node.js has higher memory usage than Go for equivalent workloads. TypeScript is reserved for frontend/CLI where its strengths (DOM API, React ecosystem) are relevant.
+
+---
+
+## ADR-011: TypeScript/NestJS for Backend Services (Supersedes ADR-006)
+
+### Status
+
+**Accepted** — 2026-06-10
+
+### Context
+
+ADR-006 specified Go for backend services. During implementation, the team chose TypeScript with NestJS instead. This ADR documents the rationale for that deviation.
+
+### Decision
+
+- **Backend services:** TypeScript with NestJS
+- **Frontend web app:** TypeScript with Next.js 15
+- **Shared libraries:** TypeScript (in `packages/`)
+- **All code in a single language:** TypeScript across the entire stack
+
+### Rationale
+
+1. **Shared type safety.** With TypeScript across the entire stack, the `@kalen/*` packages provide type-safe contracts that are consumed by both `apps/server` and `apps/web` without code generation or language boundary translation. The identity types, MCP types, A2A types, and event types flow directly from `packages/shared` to both applications.
+
+2. **Faster iteration.** During the pre-alpha phase, development velocity is paramount. NestJS's modular architecture (decorators, dependency injection, guards, interceptors) provides rapid scaffolding of feature modules. The team can build and iterate on auth, identity, messaging, MCP, and A2A modules without switching languages.
+
+3. **Unified monorepo.** All code shares the same build toolchain (TypeScript, tsconfig, pnpm, Turborepo). No need for separate Go and TypeScript build pipelines, protobuf code generation, or cross-language testing.
+
+4. **NestJS maturity.** NestJS is a production-grade framework with: modular architecture, dependency injection, WebSocket support, Swagger/OpenAPI generation, guards for authentication/authorization, interceptors for cross-cutting concerns, and TypeORM integration for database access.
+
+5. **Future Go migration path.** If performance becomes a concern at scale, individual services can be extracted to Go microservices. The package boundaries (`@kalen/shared`, `@kalen/identity`, etc.) provide clean interfaces that can be reimplemented in Go while the TypeScript packages serve as the reference implementation.
+
+### Consequences
+
+**Positive:**
+- Single language across the entire stack
+- Type safety from shared packages to both applications
+- Faster development velocity during pre-alpha
+- No protobuf code generation needed currently
+- NestJS provides well-structured module architecture
+
+**Negative:**
+- Node.js single-threaded model requires async care for I/O-heavy workloads
+- Higher memory usage than Go for equivalent workloads
+- Lost alignment with OpenIM (written in Go)
+- May need to extract performance-critical services to Go in the future
+
+---
+
+## ADR-012: Next.js 15 for Web Client
+
+### Status
+
+**Accepted** — 2026-06-10
+
+### Context
+
+The web client needs a React framework that supports server-side rendering, file-based routing, and a productive developer experience.
+
+### Decision
+
+Use **Next.js 15** with App Router for the web client.
+
+### Rationale
+
+1. **App Router.** Next.js 15's App Router provides React Server Components, nested layouts, and streaming — all beneficial for KALEN's entity-aware UI that needs to distinguish humans and agents.
+
+2. **Server Components.** Authentication checks and data fetching can happen on the server, reducing client-side JavaScript and improving security (JWT validation server-side).
+
+3. **File-based routing.** The 10-page web client (login, register, chat, agents, settings, MCP) maps naturally to Next.js's file-system router.
+
+4. **Ecosystem.** Next.js has the largest React framework ecosystem with strong TypeScript support, image optimization, and font loading.
+
+### Consequences
+
+- Web client uses `src/app/` directory for routing
+- Each page can be a server component with client islands for interactivity
+- WebAuthn flows require client components (`'use client'`)
+
+---
+
+## ADR-013: @noble/ed25519 for Ed25519 Cryptography
+
+### Status
+
+**Accepted** — 2026-06-10
+
+### Context
+
+KALEN needs Ed25519 cryptographic operations for agent identity signing and A2A card signing. The initial implementation used a fake `simpleHash()` function that was not cryptographically secure.
+
+The options considered were:
+
+1. **@noble/ed25519** — Audited, pure JavaScript Ed25519 implementation
+2. **Node.js crypto.sign()** — Built-in Node.js Ed25519 support
+3. **tweetnacl** — NaCl library with Ed25519 support
+4. **Custom implementation** — Never an option for cryptographic operations
+
+### Decision
+
+Use **@noble/ed25519 v3.1.0** for Ed25519 cryptographic operations.
+
+### Rationale
+
+1. **Audit history.** @noble/ed25519 has been audited by independent security researchers. It is used in production by multiple projects.
+
+2. **Pure JavaScript.** No native bindings — works consistently across Node.js versions and platforms. No compilation step during installation.
+
+3. **Small footprint.** Minimal codebase with no dependencies beyond what's needed for Ed25519. Tree-shakeable.
+
+4. **SHA-512 from Node.js crypto.** We use Node.js built-in `crypto.createHash('sha512')` for the SHA-512 hash function required by Ed25519, avoiding an additional dependency on @noble/hashes.
+
+5. **API surface.** Clean API: `getPublicKey()`, `sign()`, `verify()`. Easy to wrap in the `Ed25519Signer` class that provides the KALEN-specific interface.
+
+### Consequences
+
+- `@kalen/identity` depends on `@noble/ed25519`
+- `@kalen/a2a-router` uses `@kalen/identity`'s `Ed25519Signer` for card signing (no direct @noble/ed25519 dependency)
+- ESM module requires `--experimental-vm-modules` for Jest testing
+- TypeScript 5.9 Uint8Array generic type requires type assertion workaround
 
 ---
 

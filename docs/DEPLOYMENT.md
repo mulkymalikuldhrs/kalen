@@ -3,7 +3,7 @@
 **Author:** Mulky Malikul Dhaher (mulkymalikuldhr@mail.com)
 **Last Updated:** 2026-06-09
 
-> **⚠️ KALEN is pre-alpha software.** The Docker Compose local development stack exists and works. The Kubernetes production manifests, production overrides, and many infrastructure configs are **planned but not yet created or tested**. This document describes both what exists and what is planned, clearly marking each.
+> **⚠️ KALEN is pre-alpha software.** The Docker Compose local development stack exists and works. The NestJS API server and Next.js web client are implemented but use in-memory stores and simulated data. The Kubernetes production manifests, production overrides, and many infrastructure configs are **planned but not yet created or tested**. This document describes both what exists and what is planned, clearly marking each.
 
 ---
 

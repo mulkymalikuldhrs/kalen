@@ -3,7 +3,7 @@
 **Author:** Mulky Malikul Dhaher (mulkymalikuldhr@mail.com)  
 **Version:** 0.1.0-draft  
 **Date:** 2026-06-08  
-**Status:** Design Phase — sections marked `[DESIGN]` are aspirational and not yet implemented; sections marked `[IMPLEMENTED]` reflect running code.
+**Status:** Pre-Alpha — sections marked `[DESIGN]` are aspirational; sections marked `[IMPLEMENTED]` reflect running code; sections marked `[PARTIAL]` are implemented but with stubs or in-memory stores.
 
 ---
 
@@ -80,7 +80,7 @@ KALEN employs a five-layer architecture. Each layer has a single responsibility 
 
 ### 2.1 Layer 1 — Data Plane
 
-**Status: `[DESIGN]`** — PostgreSQL schema defined; Redis, MinIO, Elasticsearch, and pgvector are designed but not yet deployed.
+**Status: `[PARTIAL]`** — PostgreSQL schema defined; TypeORM entities exist in apps/server. Redis, MinIO, Elasticsearch, and pgvector are designed but not yet wired to running code.
 
 The data plane provides durable storage, caching, object storage, search, and vector similarity. Each store has a single job:
 
@@ -108,7 +108,7 @@ Client Request
 
 ### 2.2 Layer 2 — Event Backbone
 
-**Status: `[DESIGN]`**
+**Status: `[PARTIAL]`** — NATS JetStream infrastructure exists in Docker Compose. Application-level event publishing not yet implemented (services use in-memory stores).
 
 NATS JetStream serves as the central nervous system. All state-changing operations publish events to named streams:
 
@@ -136,7 +136,7 @@ NATS JetStream serves as the central nervous system. All state-changing operatio
 
 ### 2.3 Layer 3 — Service Mesh
 
-**Status: `[DESIGN]`** — Service boundaries defined; no services are deployed yet.
+**Status: `[PARTIAL]`** — Service boundaries implemented in TypeScript (NestJS), not Go as originally planned. Library packages (@kalen/shared, @kalen/identity, @kalen/mcp-gateway, @kalen/a2a-router) are tested and functional. apps/server uses in-memory stores. No services are deployed to production yet.
 
 Four core services form the business logic layer:
 
@@ -173,7 +173,7 @@ Services communicate synchronously via gRPC (for request-response) and asynchron
 
 ### 2.4 Layer 4 — API Gateway
 
-**Status: `[DESIGN]`**
+**Status: `[PARTIAL]`** — Traefik exists in Docker Compose with static config. Dynamic config and production middleware not yet implemented. NestJS server handles its own rate limiting (in-memory).
 
 The API gateway terminates TLS, enforces rate limits, injects correlation IDs, and routes requests to the appropriate service. It also handles WebSocket upgrade for the OpenIM long-connection protocol.
 
@@ -189,7 +189,7 @@ Key routes:
 
 ### 2.5 Layer 5 — Presentation
 
-**Status: `[PARTIAL]`** — Next.js web SPA is the current focus; CLI and mobile are design only.
+**Status: `[PARTIAL]`** — Next.js 15 web client exists with 10 pages, 17 components. WebAuthn login/register pages use simulated data. CLI and mobile are design only.
 
 The presentation layer is intentionally thin. It renders UI, captures user input, and delegates all business logic to the API gateway. State management uses TanStack Query for server state and Zustand for ephemeral client state.
 
@@ -197,7 +197,7 @@ The presentation layer is intentionally thin. It renders UI, captures user input
 
 ## 3. Identity Model
 
-**Status: `[DESIGN]`** — Schema defined; no implementation.
+**Status: `[PARTIAL]`** — @kalen/identity implements Ed25519 signing (real @noble/ed25519), WebAuthn helpers, JWT, RBAC, manifest signing. 127 tests passing. Challenge store is in-memory. NestJS server has auth/identity controllers.
 
 KALEN's identity model unifies humans and agents under a single `Identity` abstraction while preserving their fundamentally different authentication mechanisms.
 
@@ -352,7 +352,7 @@ Collision handling: if the generated suffix collides (extremely unlikely with 65
 
 ## 4. Messaging Architecture
 
-**Status: `[DESIGN]`** — OpenIM integration is designed but not implemented.
+**Status: `[PARTIAL]`** — OpenIM integration is designed but not implemented. NestJS messaging module exists with in-memory stores. No real message delivery.
 
 ### 4.1 Why OpenIM
 
@@ -482,7 +482,7 @@ KALEN wraps OpenIM messages with an enrichment envelope stored alongside the ori
 
 ## 5. MCP Integration
 
-**Status: `[DESIGN]`**
+**Status: `[PARTIAL]`** — @kalen/mcp-gateway implements GatewayService, MCPServer, MCPClient, AllowList with 71 tests. Tool handlers return structured JSON but are not wired to real services.
 
 ### 5.1 Gateway Pattern
 
@@ -629,7 +629,7 @@ Agent                   MCP Gateway                  Tool Server        Audit/NA
 
 ## 6. A2A Integration
 
-**Status: `[DESIGN]`**
+**Status: `[PARTIAL]`** — @kalen/a2a-router implements A2ARouterService, AgentCardService, TaskLifecycle, real Ed25519 card signing with 100 tests. Task storage is in-memory.
 
 ### 6.1 Router Pattern
 
@@ -847,7 +847,7 @@ The `parent_task_id` field in the Task schema enables this tree structure. The o
 
 ## 7. Security Design
 
-**Status: `[DESIGN]`** — Threat model defined; no security controls implemented yet.
+**Status: `[PARTIAL]`** — Threat model defined. Ed25519 signing, JWT, RBAC implemented and tested. Challenge store, rate limiting, output sanitization, and audit logging are in-memory stubs.
 
 ### 7.1 Threat Model
 

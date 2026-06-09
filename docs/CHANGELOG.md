@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.0-alpha.1] - 2026-06-10
+
+> **Note:** This is a significant pre-alpha release. Core library packages now have real implementations
+> with comprehensive tests. Two applications (API server and web client) now exist. However, the system
+> is not yet functional end-to-end — persistence is still in-memory, and external service integrations
+> (OpenIM, LiveKit) are stubs.
+
+### Added
+
+- **`@kalen/shared` package** — Fully implemented with: core types (identity, messaging, MCP, A2A, events), validation utilities (`validateAgentName`, `validateEmail`, `validatePublicKey`, `validateMCPToolSchema`), constants (`AGENT_SUFFIX`, `TaskStatus`, `VALID_TRANSITIONS`, `MAX_ROOM_MEMBERS`), type guards (`isHumanIdentity`, `isAgentIdentity`)
+- **`@kalen/identity` package** — Fully implemented with: real Ed25519 signing via `@noble/ed25519` (`Ed25519Signer.generate()`, `sign()`, `verify()`, `fromPrivateKey()`), WebAuthn helpers (`generateRegistrationOptions`, `verifyRegistrationResponse`, `generateAuthenticationOptions`, `verifyAuthenticationResponse`), JWT token management (`createToken`, `issueHumanAccessToken`, `issueAgentAccessToken`, `verifyToken`, `refreshTokens`), RBAC system (`Role`, `Permission`, `checkPermission`, `evaluateAccess`, `checkScope`), manifest signing and verification (`createManifest`, `validateManifest`, `signManifest`, `verifyManifestSignature`), agent identity verification (`verifyAgentToken`, `checkSuffixEnforcement`, `verifyAgentIdentity`)
+- **`@kalen/mcp-gateway` package** — Fully implemented with: `MCPServer` (built-in tools/resources, registerTool, callTool), `MCPClient` (connect to MCP servers via SSE transport), `GatewayService` (RBAC enforcement, allowlist enforcement, concurrent limits, audit logging, health check, shutdown), `AllowList` (permissive/restrictive modes, global deny list, evaluation order)
+- **`@kalen/a2a-router` package** — Fully implemented with: `A2ARouterService` (createTask, delegateTask, cancelTask, transitionTask, task limits, agent discovery), `AgentCardService` (registerCard, validateAgentCard, updateCard, listCards, serveWellKnown), `TaskLifecycle` (state machine with validated transitions, full lifecycle chains, addArtifact, addMessage), `signAgentCard` / `verifyAgentCardSignature` (real Ed25519 card signing using `@kalen/identity`)
+- **`@kalen/server` NestJS application** (`apps/server/`) — Full NestJS server with: auth module (WebAuthn registration/authentication, Ed25519 agent auth, JWT tokens), identity module (agent CRUD with suffix enforcement), messaging module (rooms and messages with TypeORM entities), MCP module (tool listing, invocation, server registration), A2A module (task CRUD, agent discovery), health module (database connectivity check), common utilities (CurrentUser decorator, TransformInterceptor, RateLimiterMiddleware, HttpExceptionFilter, JWT/RBAC guards), TypeORM entities (User, Agent, Room, Message, AuditLog, A2ATask, MCPCall), Swagger API docs
+- **`@kalen/web` Next.js application** (`apps/web/`) — Next.js 15 web client with 10 pages: landing page, login (WebAuthn passkey), registration (WebAuthn passkey), chat room list, chat room view, agent directory, agent profile, settings, MCP tools browser; 17 components: app-shell, sidebar, header, mobile-nav, room-list, message-list, message-bubble, message-input, typing-indicator, presence-badge, passkey-register, passkey-login, agent-card, agent-directory, identity-badge, tool-browser, tool-invocation; supporting lib (api-client, socket, auth-context, types), hooks (use-auth, use-socket, use-rooms)
+- **379 unit tests** across 15 test suites: `@kalen/shared` (2 suites, 81 tests), `@kalen/identity` (6 suites, 127 tests), `@kalen/mcp-gateway` (3 suites, 71 tests), `@kalen/a2a-router` (4 suites, 100 tests) — all passing
+- **Jest test infrastructure** — jest.config.ts for root (multi-project) and each package, ESM module transform support, manual mock for `@simplewebauthn/server`
+
+### Changed
+
+- **Ed25519 cryptography is now REAL** — Replaced fake `simpleHash()` implementation with `@noble/ed25519` v3.1.0 for actual cryptographic signing and verification. SHA-512 provided by Node.js built-in `crypto.createHash('sha512')`. Affects `packages/identity/src/agent-identity/creation.ts` and `packages/a2a-router/src/security/card-signer.ts`
+- **ADR-006 revised** — Backend is now TypeScript (NestJS), not Go. The original ADR specified Go for backend services, but implementation proceeded with TypeScript for pragmatic reasons (shared types, faster iteration, unified language across packages and apps)
+- **`@kalen/identity` package now depends on `@noble/ed25519`** — Added `@noble/ed25519@^3.1.0` as a dependency
+- **`@kalen/a2a-router` card-signer now uses `@kalen/identity`** — `signAgentCard()` and `verifyAgentCardSignature()` use `Ed25519Signer` from `@kalen/identity` instead of local `simpleHash()`
+
+### Deprecated
+
+- Nothing yet.
+
+### Removed
+
+- **`simpleHash()` function** — Removed from both `packages/identity/src/agent-identity/creation.ts` and `packages/a2a-router/src/security/card-signer.ts`. This fake hash function was insecure and has been replaced by real Ed25519 cryptography.
+
+### Fixed
+
+- **`validatePublicKey()` base64url length calculation** — Changed `Math.ceil` to `Math.floor` in `packages/shared/src/utils/validation.ts`. A 43-character base64url string (32-byte Ed25519 public key) was incorrectly calculated as 33 bytes, causing valid public keys to be rejected.
+- **`Ed25519Signer.verify()` previously always returned true** — Fixed with real Ed25519 verification that actually validates signatures cryptographically
+- **Agent and human keypairs were independently random** — Fixed so that `Ed25519Signer.generate()` derives the public key cryptographically from the private key using `ed.getPublicKey()`
+
+### Security
+
+- **Ed25519 signing is now cryptographically real** — Uses `@noble/ed25519` for actual Ed25519 signatures. Previously, `simpleHash()` produced deterministic but non-cryptographic hashes, and `verify()` always returned `true`. This was a critical security vulnerability that is now fixed.
+- **WebAuthn helper functions are implemented** — `generateRegistrationOptions`, `verifyRegistrationResponse`, `generateAuthenticationOptions`, `verifyAuthenticationResponse` use `@simplewebauthn/server`
+- **JWT token issuance and verification is implemented** — Human and agent tokens with entity type embedding, refresh token support
+- **RBAC system is implemented** — Role/Permission enums, rolePermissions mapping, checkPermission, evaluateAccess, checkScope with deny-first logic
+- **Remaining security gaps:**
+  - Challenge store is in-memory (needs Redis backing)
+  - Rate limiting is in-memory only (needs Redis for production)
+  - MCP tool output sanitization not yet implemented
+  - OAuth 2.1 / PKCE for A2A not yet implemented
+  - Audit logging is in-memory (needs PostgreSQL persistence)
+  - Data encryption at rest not yet implemented
+
+---
+
 ## [0.1.0-alpha.1] - 2026-06-09
 
 > **Note:** This is an initial scaffold release. There is no running application code.
@@ -76,4 +131,5 @@ Each subsequent release will follow this structure:
 - **Fixed** — Bug fixes, correctness improvements
 - **Security** — Security-relevant changes, vulnerability fixes, security advisories
 
+[0.2.0-alpha.1]: https://github.com/mulkymalikuldhr/kalen/releases/tag/v0.2.0-alpha.1
 [0.1.0-alpha.1]: https://github.com/mulkymalikuldhr/kalen/releases/tag/v0.1.0-alpha.1

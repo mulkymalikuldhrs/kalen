@@ -1,0 +1,174 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@layer base {
+  :root {
+    --kalen-bg: #0B0F1A;
+    --kalen-surface: #111827;
+    --kalen-surface-2: #1F2937;
+    --kalen-surface-3: #374151;
+    --kalen-border: #1F2937;
+    --kalen-border-light: #374151;
+    --kalen-primary: #3B82F6;
+    --kalen-accent: #F59E0B;
+    --kalen-text: #F9FAFB;
+    --kalen-text-secondary: #9CA3AF;
+    --kalen-text-muted: #6B7280;
+    --kalen-agent: #8B5CF6;
+    --kalen-human: #3B82F6;
+  }
+
+  * {
+    border-color: var(--kalen-border);
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-kalen-bg text-kalen-text font-sans antialiased;
+  }
+}
+
+@layer components {
+  /* Scrollbar styling */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-kalen-surface-3 rounded-full;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-kalen-text-muted;
+  }
+
+  /* Agent badge */
+  .agent-badge {
+    @apply inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider;
+    @apply bg-kalen-agent-bg text-kalen-agent border border-kalen-agent-border;
+  }
+
+  /* Human badge */
+  .human-badge {
+    @apply inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider;
+    @apply bg-kalen-human-bg text-kalen-human border border-kalen-human-border;
+  }
+
+  /* Card hover effect */
+  .card-hover {
+    @apply transition-all duration-200 hover:bg-kalen-surface-2 hover:border-kalen-border-light cursor-pointer;
+  }
+
+  /* Glow effect for primary actions */
+  .glow-primary {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
+  }
+
+  /* Message bubble styles */
+  .message-human {
+    @apply bg-kalen-human-bg border-kalen-human-border;
+  }
+
+  .message-agent {
+    @apply bg-kalen-agent-bg border-kalen-agent-border;
+  }
+
+  /* Typing dots animation */
+  .typing-dot {
+    @apply w-1.5 h-1.5 rounded-full bg-kalen-text-muted;
+    animation: typing 1.4s infinite ease-in-out;
+  }
+
+  .typing-dot:nth-child(1) {
+    animation-delay: 0s;
+  }
+
+  .typing-dot:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+
+  .typing-dot:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+
+  /* Markdown content styling */
+  .markdown-content {
+    @apply text-kalen-text leading-relaxed;
+  }
+
+  .markdown-content p {
+    @apply mb-2;
+  }
+
+  .markdown-content p:last-child {
+    @apply mb-0;
+  }
+
+  .markdown-content code {
+    @apply bg-kalen-surface-3 px-1.5 py-0.5 rounded text-sm font-mono text-kalen-accent;
+  }
+
+  .markdown-content pre {
+    @apply bg-kalen-surface rounded-lg p-4 my-2 overflow-x-auto border border-kalen-border;
+  }
+
+  .markdown-content pre code {
+    @apply bg-transparent px-0 py-0 text-kalen-text;
+  }
+
+  .markdown-content a {
+    @apply text-kalen-primary underline hover:text-kalen-primary-hover;
+  }
+
+  .markdown-content blockquote {
+    @apply border-l-2 border-kalen-accent pl-4 italic text-kalen-text-secondary;
+  }
+
+  .markdown-content ul,
+  .markdown-content ol {
+    @apply pl-6 mb-2;
+  }
+
+  .markdown-content ul {
+    @apply list-disc;
+  }
+
+  .markdown-content ol {
+    @apply list-decimal;
+  }
+
+  .markdown-content h1,
+  .markdown-content h2,
+  .markdown-content h3 {
+    @apply font-semibold mb-2 text-kalen-text;
+  }
+
+  .markdown-content h1 {
+    @apply text-xl;
+  }
+
+  .markdown-content h2 {
+    @apply text-lg;
+  }
+
+  .markdown-content h3 {
+    @apply text-base;
+  }
+}
+
+@layer utilities {
+  .text-gradient-primary {
+    @apply bg-gradient-to-r from-kalen-primary to-kalen-accent bg-clip-text text-transparent;
+  }
+}

@@ -4,10 +4,11 @@
 **Last Updated:** 2026-06-09
 **API Version:** v1 (planned)
 
-> **⚠️ NOTHING IN THIS DOCUMENT IS IMPLEMENTED YET.**
-> All endpoints, events, and schemas listed below are **planned — not yet implemented**.
-> This document serves as the API contract that implementations will follow.
-> When endpoints are implemented, their status will be updated from "Planned" to "Implemented" with the version number.
+> **⚠️ API endpoints are partially implemented.** Auth, identity, messaging, MCP, and A2A controllers
+> exist in the NestJS server (apps/server), but they use in-memory stores and simulated data.
+> The API contract documented below represents the target design. When endpoints are fully
+> wired to PostgreSQL/Redis, their status will be updated from "Planned" to "Implemented".
+> See docs/SECURITY.md for which security features are real vs. stubs.
 
 ---
 

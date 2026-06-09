@@ -103,7 +103,7 @@ export function validatePublicKey(key: string): { valid: boolean; error?: string
     return { valid: false, error: "Public key must be base64url-encoded (no padding)" };
   }
 
-  const decodedLength = Math.ceil((key.length * 3) / 4);
+  const decodedLength = Math.floor((key.length * 3) / 4);
   if (decodedLength !== ED25519_PUBLIC_KEY_LENGTH) {
     return { valid: false, error: `Ed25519 public key must decode to ${ED25519_PUBLIC_KEY_LENGTH} bytes, got ${decodedLength}` };
   }

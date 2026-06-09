@@ -1,0 +1,117 @@
+# KALEN Release Pipeline
+# Triggered when a version tag (v*) is pushed.
+#
+# Jobs: build → create GitHub release with auto-generated changelog
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  NODE_VERSION: "20"
+  PNPM_VERSION: "9"
+
+jobs:
+  # ── Build ────────────────────────────────────────────────────
+  build:
+    name: Build Release Artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run lint
+        run: pnpm lint
+
+      - name: Run type check
+        run: pnpm typecheck
+
+      - name: Run tests
+        run: pnpm test
+        env:
+          NODE_OPTIONS: "--experimental-vm-modules"
+
+      - name: Build all packages
+        run: pnpm build
+
+  # ── Create Release ───────────────────────────────────────────
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get the previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          if [ -z "$PREV_TAG" ]; then
+            # First release — include all commits
+            COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges)
+          else
+            # Commits since last tag
+            COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges "${PREV_TAG}..HEAD")
+          fi
+
+          # Categorize commits
+          FEAT=$(echo "$COMMITS" | grep -i "^- feat" || true)
+          FIX=$(echo "$COMMITS" | grep -i "^- fix" || true)
+          OTHER=$(echo "$COMMITS" | grep -vi "^- feat" | grep -vi "^- fix" || true)
+
+          # Build changelog body
+          {
+            echo "CHANGELOG<<EOF"
+            if [ -n "$FEAT" ]; then
+              echo "## 🚀 Features"
+              echo "$FEAT"
+              echo ""
+            fi
+            if [ -n "$FIX" ]; then
+              echo "## 🐛 Bug Fixes"
+              echo "$FIX"
+              echo ""
+            fi
+            if [ -n "$OTHER" ]; then
+              echo "## 📦 Other Changes"
+              echo "$OTHER"
+              echo ""
+            fi
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: KALEN ${{ github.ref_name }}
+          body: ${{ steps.changelog.outputs.CHANGELOG }}
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          generate_release_notes: false

@@ -13,14 +13,19 @@
     "dev": "tsc --watch",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
+    "test": "jest --config jest.config.ts",
     "clean": "rm -rf dist"
   },
   "dependencies": {
     "@kalen/shared": "workspace:*",
+    "@noble/ed25519": "^3.1.0",
     "@simplewebauthn/server": "^13.0.0",
     "jose": "^5.9.0"
   },
   "devDependencies": {
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "jest": "^30.0.0",
+    "ts-jest": "^29.0.0",
+    "@types/jest": "^30.0.0"
   }
 }

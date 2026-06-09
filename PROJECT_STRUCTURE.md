@@ -2,21 +2,23 @@ KALEN — Kinetic Autonomous Layer for Entity Networking
 Complete Project Directory Structure
 ═══════════════════════════════════════════════════════════════════
 
+> **Legend:** ✅ = Implemented | ⚠️ = Stub/Simulated | 📋 = Planned
+
 kalen/
-├── .github/                                    # GitHub-specific config
+├── .github/                                    # 📋 GitHub-specific config
 │   ├── workflows/
-│   │   ├── ci.yml                              # CI: lint, typecheck, test, build on PR
-│   │   ├── cd-staging.yml                      # CD: deploy staging on merge to develop
-│   │   ├── cd-production.yml                   # CD: deploy production on merge to main
-│   │   ├── security-scan.yml                   # Snyk/Trivy vulnerability scanning
-│   │   └── release.yml                         # Semantic versioning + changelog generation
+│   │   ├── ci.yml                              # 📋 CI: lint, typecheck, test, build on PR
+│   │   ├── cd-staging.yml                      # 📋 CD: deploy staging on merge to develop
+│   │   ├── cd-production.yml                   # 📋 CD: deploy production on merge to main
+│   │   ├── security-scan.yml                   # 📋 Snyk/Trivy vulnerability scanning
+│   │   └── release.yml                         # 📋 Semantic versioning + changelog generation
 │   ├── ISSUE_TEMPLATE/
-│   │   ├── bug_report.yml                      # Structured bug report form
-│   │   ├── feature_request.yml                 # Feature request form
-│   │   └── security_vulnerability.yml          # Private security disclosure form
-│   ├── PULL_REQUEST_TEMPLATE.md                # PR checklist with architecture impact
-│   ├── CODEOWNERS                              # Per-package code ownership
-│   └── dependabot.yml                          # Automated dependency updates
+│   │   ├── bug_report.yml                      # 📋 Structured bug report form
+│   │   ├── feature_request.yml                 # 📋 Feature request form
+│   │   └── security_vulnerability.yml          # 📋 Private security disclosure form
+│   ├── PULL_REQUEST_TEMPLATE.md                # 📋 PR checklist with architecture impact
+│   ├── CODEOWNERS                              # 📋 Per-package code ownership
+│   └── dependabot.yml                          # 📋 Automated dependency updates
 │
 ├── .husky/                                     # Git hooks
 │   ├── pre-commit                              # lint-staged: prettier + eslint
@@ -28,7 +30,7 @@ kalen/
 │   └── launch.json                             # Debug configs for all packages
 │
 ├── apps/                                       # ═══ APPLICATIONS ═══
-│   ├── web/                                    # Next.js 14+ web client (App Router)
+│   ├── web/                                    # ✅ Next.js 15 web client (App Router)
 │   │   ├── package.json                        # Dependencies: next, react, @kalen/*
 │   │   ├── next.config.ts                      # Next.js config: transpilePackages, rewrites
 │   │   ├── tsconfig.json                       # Extends root tsconfig

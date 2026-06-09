@@ -1,12 +1,12 @@
 # KALEN — Development TODO
 
-> **Status**: Pre-Alpha. No production code deployed. This document tracks honest progress.
+> **Status**: Pre-Alpha. Core library packages implemented with 379 tests. Applications exist but not yet end-to-end functional. This document tracks honest progress.
 
-**Last Updated**: 2026-06-09
+**Last Updated**: 2026-06-10
 
 ---
 
-## Phase 0: Project Setup ✅ (Current)
+## Phase 0: Project Setup ✅ (Complete)
 
 - [x] Initialize monorepo (pnpm workspaces + Turborepo)
 - [x] Configure TypeScript strict mode across all packages
@@ -25,54 +25,73 @@
 - [x] LICENSE (AGPL-3.0)
 - [x] Comprehensive documentation (README, PRD, design, architecture, API, deployment, security, contributing, structure, changelog)
 
-### Known Issues in Phase 0
+### Completed in Subsequent Tasks
 
-- **Ed25519 signing**: Current implementation uses deterministic hash-based approach. Must replace with `@noble/ed25519` or `crypto.sign()` for real Ed25519 signatures.
+- [x] Replace hash-based signing with real Ed25519 (`@noble/ed25519`) — **Task 1**
+- [x] Write unit tests for all 4 library packages — **Task 5** (379 tests passing)
+- [x] Fix `validatePublicKey()` base64url length bug (Math.ceil → Math.floor) — **Task 5**
+
+### Known Issues (carried forward)
+
 - **MCP tool handlers**: Built-in tools return structured responses but are not wired to actual services yet.
-- **A2A task storage**: In-memory only. Needs PostgreSQL persistence.
+- **A2A task storage**: In-memory only. TypeORM entities defined but services use in-memory stores.
 - **SSE transport**: Uses browser EventSource. Server-side needs `eventsource` npm package.
-- **No test files**: Zero test coverage. Must be addressed in Phase 1.
+- **Challenge store**: In-memory only. Needs Redis backing.
 
 ---
 
-## Phase 1: Identity Service (MVP Foundation)
+## Phase 1: Identity Service (MVP Foundation) — ~60% Complete
 
-- [ ] Replace hash-based signing with real Ed25519 (`@noble/ed25519`)
+- [x] Replace hash-based signing with real Ed25519 (`@noble/ed25519`)
+- [x] Implement Ed25519 keypair generation, signing, and verification
+- [x] Implement JWT token issuance and verification (human + agent)
+- [x] Implement RBAC system (Role, Permission, checkPermission, evaluateAccess, checkScope)
+- [x] Implement manifest signing and verification
+- [x] Implement agent identity verification (verifyAgentToken, checkSuffixEnforcement)
+- [x] Implement WebAuthn helper functions (generateRegistrationOptions, verifyRegistrationResponse, etc.)
+- [x] Create NestJS server with auth, identity modules
+- [x] Create Next.js web client with WebAuthn login/registration pages
+- [x] Write unit tests for identity package (127 tests, 6 suites)
 - [ ] Implement WebAuthn registration end-to-end test with real browser
 - [ ] Implement WebAuthn authentication end-to-end test with real browser
 - [ ] Wire ChallengeStore to real Redis connection
-- [ ] Create PostgreSQL schema for credentials and identities
-- [ ] Implement credential storage service (TypeORM + PostgreSQL)
-- [ ] Build REST API endpoints for identity operations:
-  - [ ] `POST /api/v1/identity/register` — Human registration with passkey
-  - [ ] `POST /api/v1/identity/authenticate` — Human authentication
-  - [ ] `POST /api/v1/identity/agent/create` — Agent identity creation
-  - [ ] `GET /api/v1/identity/agent/:id` — Agent identity retrieval
-  - [ ] `POST /api/v1/identity/agent/:id/verify` — Agent token verification
-- [ ] Implement RBAC middleware for API routes
-- [ ] Write unit tests for identity package (>80% coverage target)
-- [ ] Write integration tests for WebAuthn flow
+- [ ] Create PostgreSQL schema for credentials and identities (TypeORM entities exist, need migration)
+- [ ] Implement credential storage service (TypeORM + PostgreSQL — entities defined, not yet used)
+- [ ] Build REST API endpoints for identity operations (controllers exist, need real persistence):
+  - [x] `POST /api/v1/auth/register-begin` — Controller exists, uses in-memory store
+  - [x] `POST /api/v1/auth/register-finish` — Controller exists, uses in-memory store
+  - [x] `POST /api/v1/auth/login-begin` — Controller exists, uses in-memory store
+  - [x] `POST /api/v1/auth/login-finish` — Controller exists, uses in-memory store
+  - [x] `POST /api/v1/auth/agent` — Controller exists, uses Ed25519Signer.verify()
+  - [x] `POST /api/v1/identity/agent/create` — Controller exists with suffix enforcement
+  - [ ] Wire all controllers to PostgreSQL-backed persistence
+- [x] Implement RBAC middleware for API routes (guards exist)
+- [x] Write unit tests for identity package (>80% coverage target — achieved)
+- [ ] Write integration tests for WebAuthn flow (with real DB)
 - [ ] Security audit: verify no private keys stored server-side
 - [ ] Security audit: verify suffix enforcement is unbreakable
 
-**Estimated Duration**: 4-6 weeks
-**Success Criteria**: A human can register with a passkey, an agent can be created with `(ai)` suffix, tokens are issued and verified correctly.
+**Estimated Duration**: 4-6 weeks (2-3 weeks remaining)
+**Success Criteria**: A human can register with a passkey, an agent can be created with `(ai)` suffix, tokens are issued and verified correctly. — *Partially met: library code works, but end-to-end with real persistence not yet functional.*
 
 ---
 
-## Phase 2: Messaging Integration (OpenIM)
+## Phase 2: Messaging Integration (OpenIM) — ~15% Complete
 
 - [ ] Set up OpenIM Server in Docker Compose
 - [ ] Implement OpenIM auth hook (delegate to KALEN identity service)
 - [ ] Implement OpenIM callback/webhook handlers
-- [ ] Create conversation service:
+- [x] Create NestJS messaging module with controllers and services (in-memory)
+- [x] Create TypeORM entities for rooms and messages
+- [x] Create Next.js chat interface with room list, message list, message input
+- [ ] Wire messaging service to real message delivery (OpenIM):
   - [ ] Direct message rooms (human-human, human-agent)
   - [ ] Group rooms with membership management
   - [ ] Agent workspace rooms
   - [ ] System notification rooms
 - [ ] Implement message enrichment pipeline (KALEN envelope)
 - [ ] Add presence service (online/offline/busy)
-- [ ] Add typing indicators
+- [ ] Add typing indicators (UI exists, needs real backend)
 - [ ] Implement message search with Elasticsearch
 - [ ] Write unit tests for messaging module
 - [ ] Write integration tests with real OpenIM instance
@@ -83,80 +102,82 @@
 
 ---
 
-## Phase 3: MCP Gateway (Agent-Tool Integration)
+## Phase 3: MCP Gateway (Agent-Tool Integration) — ~40% Complete
 
+- [x] Implement MCP Server with built-in tools and resources
+- [x] Implement MCP Client with SSE transport
+- [x] Implement GatewayService with RBAC + allowlist governance
+- [x] Implement AllowList (permissive/restrictive modes)
+- [x] Create NestJS MCP module with controllers (list tools, invoke, register server)
+- [x] Create Next.js MCP tools browser UI
+- [x] Write unit tests for MCP gateway package (71 tests, 3 suites)
 - [ ] Replace EventSource with server-compatible SSE client
 - [ ] Implement stdio transport for MCP client
 - [ ] Wire MCP tool handlers to actual KALEN services
 - [ ] Implement tool discovery with catalog merging from multiple MCP servers
-- [ ] Build MCP Gateway REST API:
-  - [ ] `GET /api/v1/mcp/tools` — List all available tools
-  - [ ] `POST /api/v1/mcp/tools/:name/invoke` — Invoke a tool
-  - [ ] `GET /api/v1/mcp/resources` — List available resources
-  - [ ] `POST /api/v1/mcp/servers` — Register new MCP server
 - [ ] Implement allowlist/denylist governance UI
-- [ ] Add audit logging for all tool invocations (PostgreSQL)
-- [ ] Write unit tests for MCP gateway
+- [ ] Add audit logging for all tool invocations (PostgreSQL — entity exists, not used)
 - [ ] Integration test: connect to a real MCP server, list tools, invoke tool
 - [ ] Security: implement tool output sanitization (strip prompt injection)
 
-**Estimated Duration**: 3-4 weeks
+**Estimated Duration**: 3-4 weeks (2-3 weeks remaining)
 **Success Criteria**: An agent can discover and invoke tools through the gateway, invocations are audited and governed by allowlist.
 
 ---
 
-## Phase 4: A2A Router (Agent-Agent Communication)
+## Phase 4: A2A Router (Agent-Agent Communication) — ~45% Complete
 
-- [ ] Replace in-memory task storage with PostgreSQL
-- [ ] Implement agent card `.well-known/agent.json` endpoint
-- [ ] Build A2A Router REST API:
-  - [ ] `GET /api/v1/a2a/agents/:id/card` — Get agent card
-  - [ ] `POST /api/v1/a2a/tasks` — Create task
-  - [ ] `GET /api/v1/a2a/tasks/:id` — Get task status
-  - [ ] `POST /api/v1/a2a/tasks/:id/cancel` — Cancel task
-  - [ ] `POST /api/v1/a2a/tasks/:id/message` — Send message to task
-- [ ] Implement task lifecycle with validated state transitions
+- [x] Implement A2ARouterService with task CRUD and delegation
+- [x] Implement AgentCardService with register, validate, update, list
+- [x] Implement TaskLifecycle state machine with validated transitions
+- [x] Implement Ed25519 Agent Card signing and verification
+- [x] Create NestJS A2A module with controllers and DTOs
+- [x] Write unit tests for A2A router package (100 tests, 4 suites)
+- [ ] Replace in-memory task storage with PostgreSQL (entity exists, not used)
+- [ ] Implement agent card `.well-known/agent.json` endpoint (service exists, needs route)
 - [ ] Implement artifact storage with MinIO presigned URLs
 - [ ] Implement remote agent discovery with caching and retry
 - [ ] Add OAuth 2.1 / PKCE for A2A authentication
-- [ ] Write unit tests for A2A router
 - [ ] Integration test: two agents negotiate and complete a task
 - [ ] Security: verify card signatures, validate all inputs
 
-**Estimated Duration**: 3-4 weeks
+**Estimated Duration**: 3-4 weeks (2-3 weeks remaining)
 **Success Criteria**: Two agents can discover each other, create a task, exchange messages, and produce artifacts.
 
 ---
 
-## Phase 5: Web Client (Next.js)
+## Phase 5: Web Client (Next.js) — ~50% Complete
 
-- [ ] Scaffold Next.js 14 app with App Router
-- [ ] Implement login/registration page with WebAuthn
-- [ ] Implement chat interface (rooms, messages, presence)
-- [ ] Implement agent management dashboard
-- [ ] Implement MCP tool browser
+- [x] Scaffold Next.js 15 app with App Router
+- [x] Implement login/registration page with WebAuthn UI
+- [x] Implement chat interface (rooms, messages, presence) — UI exists, uses simulated data
+- [x] Implement agent management dashboard — UI exists
+- [x] Implement MCP tool browser — UI exists
+- [x] Responsive design (mobile-first with mobile-nav)
 - [ ] Implement A2A task monitor
 - [ ] Implement admin panel (RBAC, allowlist, audit logs)
-- [ ] Implement real-time updates via WebSocket
+- [ ] Implement real-time updates via WebSocket (socket client exists, needs real server)
 - [ ] Implement audio/video calls via LiveKit SDK
-- [ ] Responsive design (mobile-first)
+- [ ] Wire all components to real API backend (currently uses simulated data)
 - [ ] Accessibility audit (WCAG 2.1 AA)
 - [ ] E2E tests with Playwright
 
-**Estimated Duration**: 6-8 weeks
+**Estimated Duration**: 6-8 weeks (3-5 weeks remaining)
 **Success Criteria**: A user can log in with a passkey, chat with humans and agents, manage tools, and monitor agent tasks from a browser.
 
 ---
 
-## Phase 6: Testing & Hardening
+## Phase 6: Testing & Hardening — ~20% Complete
 
-- [ ] Achieve >80% unit test coverage across all packages
+- [x] Achieve >80% unit test coverage across all library packages (379 tests)
+- [x] Fix validatePublicKey() bug found through testing
 - [ ] Integration test suite with real services (Docker Compose)
 - [ ] Load testing: verify 10,000 concurrent WebSocket connections
 - [ ] Load testing: verify <200ms p95 messaging latency
 - [ ] Security penetration testing
 - [ ] Dependency audit (npm audit, Snyk)
-- [ ] Rate limiting implementation across all API endpoints
+- [x] Rate limiting implementation (in-memory, exists in server)
+- [ ] Replace in-memory rate limiting with Redis-backed
 - [ ] Implement mTLS for inter-service communication
 - [ ] Implement E2EE for messaging (Olm/Megolm via Matrix)
 - [ ] Chaos engineering: test service failures, network partitions
@@ -168,12 +189,13 @@
 
 ---
 
-## Phase 7: Production Deployment
+## Phase 7: Production Deployment — ~10% Complete
 
-- [ ] Kubernetes manifests for all services
-- [ ] Kustomize overlays for staging and production
+- [x] Kubernetes manifest structure defined in docs
+- [x] Kustomize overlay structure planned
+- [ ] Kubernetes manifests for all services (created and tested)
 - [ ] Helm chart for one-command deployment
-- [ ] CI/CD pipeline (GitHub Actions)
+- [ ] CI/CD pipeline (GitHub Actions — defined but not tested)
 - [ ] Automated database migrations
 - [ ] Backup and disaster recovery procedures
 - [ ] Monitoring dashboards (Grafana)
@@ -187,6 +209,23 @@
 
 **Estimated Duration**: 4-6 weeks
 **Success Criteria**: KALEN can be deployed to a Kubernetes cluster with a single command, all services are healthy, monitoring is active.
+
+---
+
+## Overall Progress Summary
+
+| Phase | Progress | Status |
+|-------|----------|--------|
+| Phase 0: Project Setup | 100% | ✅ Complete |
+| Phase 1: Identity Service | ~60% | 🔄 In Progress |
+| Phase 2: Messaging | ~15% | 📋 Early Stage |
+| Phase 3: MCP Gateway | ~40% | 🔄 In Progress |
+| Phase 4: A2A Router | ~45% | 🔄 In Progress |
+| Phase 5: Web Client | ~50% | 🔄 In Progress |
+| Phase 6: Testing & Hardening | ~20% | 📋 Early Stage |
+| Phase 7: Production Deployment | ~10% | 📋 Planned |
+
+**Overall project completion: ~35%** (up from ~15% at project start)
 
 ---
 

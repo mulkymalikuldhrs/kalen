@@ -15,6 +15,8 @@
   <img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License: AGPL-3.0" />
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome" />
   <img src="https://img.shields.io/badge/status-pre--alpha-orange.svg" alt="Status: Pre-Alpha" />
+  <img src="https://img.shields.io/badge/tests-379%20passing-brightgreen.svg" alt="Tests: 379 passing" />
+  <img src="https://img.shields.io/badge/version-0.2.0--alpha-blue.svg" alt="Version: 0.2.0-alpha" />
 </p>
 
 ---
@@ -294,30 +296,38 @@ KALEN's dual identity model ensures agents are **identifiable, accountable, and 
 | Project structure document | ✅ Done | Full directory tree with file-level descriptions |
 | CI/CD pipeline definitions | ✅ Defined | GitHub Actions workflows in project structure (not yet tested) |
 | Database init scripts | ✅ Done | PostgreSQL with `uuid-ossp` and `pgvector` extensions |
+| `@kalen/shared` package | ✅ Done | Core types (identity, messaging, MCP, A2A, events), validation utilities, constants |
+| `@kalen/identity` package | ✅ Done | Real Ed25519 signing (`@noble/ed25519`), WebAuthn helpers, JWT, RBAC, manifest signing/verification |
+| `@kalen/mcp-gateway` package | ✅ Done | MCP server/client, gateway service with RBAC + allowlist governance, audit logging |
+| `@kalen/a2a-router` package | ✅ Done | A2A router service, task lifecycle state machine, agent card service, Ed25519 card signing |
+| API server (`apps/server`) | ✅ Done | NestJS server with auth, identity, messaging, MCP, A2A, health modules + TypeORM entities |
+| Web client (`apps/web`) | ✅ Done | Next.js 15 app with 10 pages, 17 components, WebAuthn login, chat, agent directory, MCP browser |
+| Unit tests | ✅ Done | **379 tests across 15 test suites** — all passing |
+| Ed25519 cryptography | ✅ Done | Real Ed25519 via `@noble/ed25519` (replaced fake `simpleHash()` implementation) |
 
-### What does NOT exist yet
+### What does NOT exist yet (honest assessment)
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| Web client (`apps/web`) | ❌ Not started | Next.js application — pages, components, hooks, stores |
-| API server (`apps/server`) | ❌ Not started | NestJS application — modules, controllers, services |
-| Shared package (`packages/shared`) | ❌ Not started | Types, schemas, protocols, utilities |
-| Identity package (`packages/identity`) | ❌ Not started | WebAuthn implementation, agent identity, RBAC |
-| MCP Gateway package (`packages/mcp-gateway`) | ❌ Not started | MCP protocol, tool registry, governance |
-| A2A Router package (`packages/a2a-router`) | ❌ Not started | A2A protocol, task lifecycle, discovery |
-| Integration with OpenIM | ❌ Not started | OpenIM bridge and message mapping |
-| End-to-end tests | ❌ Not started | Playwright E2E, Jest integration tests |
+| PostgreSQL persistence for tasks/audit | ⚠️ In-memory only | TypeORM entities defined but services use in-memory stores |
+| Redis-backed challenge store | ⚠️ Stub | InMemoryChallengeStore in auth service; needs real Redis |
+| OpenIM integration | ❌ Not started | Messaging service is a stub — not wired to OpenIM |
+| LiveKit integration | ❌ Not started | No real-time audio/video |
+| MCP tool handlers | ⚠️ Stubs | Return structured JSON but not wired to real services |
+| Real-time WebSocket messaging | ⚠️ Partial | Gateway exists but not connected to OpenIM |
+| Agent runtime | ❌ Not started | No containerized agent execution environment |
+| E2E tests | ❌ Not started | Playwright E2E, Jest integration tests |
 | Production deployment | ❌ Not started | Not deployed anywhere yet |
 | Documentation site | ❌ Not started | Architecture docs, API reference, guides |
 
 ### What we're working on next
 
-1. `@kalen/shared` — Core types, protocol schemas, and validation
-2. `@kalen/identity` — WebAuthn registration/authentication flow
-3. `apps/server` — Auth and conversation modules
-4. `apps/web` — Login page and chat interface
+1. Wire in-memory stores to PostgreSQL via TypeORM
+2. Implement Redis-backed challenge store and rate limiting
+3. OpenIM integration for real messaging
+4. E2E tests with Playwright
 
-**There is no working application yet.** If you clone this repo today, you will get infrastructure configs and an empty monorepo. We believe this transparency is better than overclaiming.
+**The project has working library code and applications, but is not yet a functional end-to-end system.** Core cryptographic operations (Ed25519 signing/verification, JWT, RBAC) are real and tested. The main gaps are in persistence (still in-memory) and external service integration (OpenIM, LiveKit).
 
 ---
 
@@ -336,7 +346,7 @@ KALEN's dual identity model ensures agents are **identifiable, accountable, and 
 
 | Category | Technology | Purpose |
 |----------|-----------|---------|
-| **Web Client** | Next.js 14+ (App Router) | Server-rendered React application |
+| **Web Client** | Next.js 15 (App Router) | Server-rendered React application |
 | **UI Components** | shadcn/ui + Radix UI | Accessible, composable component primitives |
 | **Styling** | Tailwind CSS 3+ | Utility-first CSS |
 | **State (Client)** | Zustand | Lightweight client-side state |
@@ -404,6 +414,9 @@ KALEN's dual identity model ensures agents are **identifiable, accountable, and 
 git clone https://github.com/mulkymalikuldhr/kalen.git
 cd kalen
 
+# Install dependencies
+pnpm install
+
 # Run the one-command setup script
 # This will:
 #   1. Copy .env.example → .env
@@ -412,6 +425,19 @@ cd kalen
 #   4. Wait for PostgreSQL to be ready
 #   5. Run database migrations
 bash infra/scripts/setup-local.sh
+```
+
+### Run Tests
+
+```bash
+# Run all 379 unit tests
+pnpm test
+
+# Run tests for a specific package
+pnpm --filter @kalen/identity test
+pnpm --filter @kalen/shared test
+pnpm --filter @kalen/mcp-gateway test
+pnpm --filter @kalen/a2a-router test
 ```
 
 ### Configure Environment
@@ -772,5 +798,5 @@ Additionally, KALEN relies on many excellent open-source projects listed in our 
 </p>
 
 <p align="center">
-  <sub>KALEN is pre-alpha software. Nothing works yet. We're building in the open.</sub>
+  <sub>KALEN is pre-alpha software. Core libraries and applications exist with 379 passing tests,<br/>but end-to-end functionality (real messaging, persistence, agent runtime) is not yet complete.<br/>We're building in the open.</sub>
 </p>

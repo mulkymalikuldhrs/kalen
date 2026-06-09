@@ -3,15 +3,25 @@
  * Generate Ed25519 keypairs, create manifests, and build agent identities.
  */
 
+import * as ed from "@noble/ed25519";
+import { createHash } from "node:crypto";
 import type { AgentIdentity } from "@kalen/shared";
 import { AGENT_SUFFIX, AGENT_ACCESS_TOKEN_TTL } from "@kalen/shared";
 import { validateAgentName, validatePublicKey } from "@kalen/shared";
 import { createManifest } from "./manifest";
 import { createToken, type TokenPayload } from "../token/jwt";
 
+// Configure synchronous SHA-512 for @noble/ed25519 sync operations.
+// Node.js crypto.createHash provides a fast, native SHA-512 without
+// requiring an additional npm dependency like @noble/hashes.
+// Type assertion needed: TS 5.9 uses Uint8Array<ArrayBuffer> generics,
+// but Node.js Buffer extends Uint8Array<ArrayBufferLike>.
+ed.hashes.sha512 = ((message: Uint8Array): Uint8Array =>
+  new Uint8Array(createHash("sha512").update(message).digest())) as typeof ed.hashes.sha512;
+
 /**
  * Ed25519 signer/verifier for agent identity operations.
- * Wraps the ed25519 npm package for consistent base64url encoding.
+ * Uses @noble/ed25519 for real cryptographic Ed25519 signing and verification.
  */
 export class Ed25519Signer {
   private readonly privateKeyBytes: Uint8Array | null;
@@ -24,26 +34,14 @@ export class Ed25519Signer {
 
   /**
    * Generate a new Ed25519 keypair.
+   * The public key is cryptographically derived from the private key.
    *
    * @returns Ed25519Signer with both private and public keys
    */
   static generate(): Ed25519Signer {
-    // We use the Web Crypto API (available in Node.js 18+ and browsers)
-    // for Ed25519 key generation. This avoids native module build issues.
-    const crypto = globalThis.crypto;
-    if (!crypto || !crypto.subtle) {
-      throw new Error("Web Crypto API is not available in this environment");
-    }
-
-    // For synchronous usage, we generate keys using a fallback approach
-    // In production, this would use crypto.subtle.generateKey("Ed25519")
-    // and export the raw keys. For now, we use a simple approach:
-    const privateKey = new Uint8Array(32);
-    const publicKey = new Uint8Array(32);
-    crypto.getRandomValues(privateKey);
-    crypto.getRandomValues(publicKey);
-
-    return new Ed25519Signer(privateKey, publicKey);
+    const secretKey = ed.utils.randomSecretKey();
+    const publicKey = ed.getPublicKey(secretKey);
+    return new Ed25519Signer(secretKey, publicKey);
   }
 
   /**
@@ -58,51 +56,41 @@ export class Ed25519Signer {
   }
 
   /**
+   * Create an Ed25519Signer from a private key, deriving the public key automatically.
+   *
+   * @param privateKey - Raw private key bytes (32-byte Ed25519 secret key seed)
+   * @returns Ed25519Signer instance with derived public key
+   */
+  static fromPrivateKey(privateKey: Uint8Array): Ed25519Signer {
+    const publicKey = ed.getPublicKey(privateKey);
+    return new Ed25519Signer(privateKey, publicKey);
+  }
+
+  /**
    * Sign a message with the Ed25519 private key.
    *
    * @param message - The message string to sign
-   * @returns Base64url-encoded signature
+   * @returns Base64url-encoded 64-byte Ed25519 signature
    */
   sign(message: string): string {
     if (!this.privateKeyBytes) {
       throw new Error("Cannot sign: no private key available (verify-only instance)");
     }
 
-    // Use Web Crypto API for Ed25519 signing
-    // For environments where Web Crypto Ed25519 is not yet available,
-    // we provide a HMAC-based deterministic signature as a compatible fallback
-    const encoder = new TextEncoder();
-    const data = encoder.encode(message);
-
-    // Create a deterministic signature from the private key and message
-    // This uses a hash-based approach that's consistent and verifiable
-    const keyMaterial = this.privateKeyBytes;
-    const signature = new Uint8Array(64);
-
-    // Simple deterministic signature: hash(privateKey + message) repeated to fill 64 bytes
-    // In production, this would be real Ed25519 signing via @noble/ed25519 or similar
-    const combined = new Uint8Array(keyMaterial.length + data.length);
-    combined.set(keyMaterial);
-    combined.set(data, keyMaterial.length);
-
-    // Hash the combined data to produce signature bytes
-    const hash1 = simpleHash(combined);
-    const hash2 = simpleHash(new Uint8Array([...hash1, ...keyMaterial]));
-    signature.set(hash1);
-    signature.set(hash2, 32);
-
+    const data = new TextEncoder().encode(message);
+    const signature = ed.sign(data, this.privateKeyBytes);
     return bytesToBase64url(signature);
   }
 
   /**
-   * Verify a signature against a public key.
+   * Verify a signature against a public key using real Ed25519 verification.
    *
    * @param message - The original message
    * @param signature - Base64url-encoded signature
    * @param publicKey - Base64url-encoded public key
    * @returns Whether the signature is valid
    */
-  static verify(_message: string, signature: string, publicKey: string): boolean {
+  static verify(message: string, signature: string, publicKey: string): boolean {
     try {
       const sigBytes = base64urlToBytes(signature);
       const pubBytes = base64urlToBytes(publicKey);
@@ -110,7 +98,8 @@ export class Ed25519Signer {
       if (sigBytes.length !== 64) return false;
       if (pubBytes.length !== 32) return false;
 
-      return true;
+      const data = new TextEncoder().encode(message);
+      return ed.verify(sigBytes, data, pubBytes);
     } catch {
       return false;
     }
@@ -130,24 +119,6 @@ export class Ed25519Signer {
   getPrivateKeyBytes(): Uint8Array | null {
     return this.privateKeyBytes;
   }
-}
-
-/** Simple hash function for deterministic signature generation */
-function simpleHash(data: Uint8Array): Uint8Array {
-  const result = new Uint8Array(32);
-  let acc = 0;
-  for (let i = 0; i < data.length; i++) {
-    acc = (acc * 31 + data[i]) & 0xFFFFFFFF;
-    const idx = i % 32;
-    result[idx] = (result[idx] ^ (acc & 0xFF)) & 0xFF;
-  }
-  // Additional mixing passes for better distribution
-  for (let round = 0; round < 4; round++) {
-    for (let i = 0; i < 32; i++) {
-      result[i] = (result[i] ^ result[(i + 7) % 32] ^ (acc >> (i % 8))) & 0xFF;
-    }
-  }
-  return result;
 }
 
 /** Convert bytes to base64url encoding (no padding) */

@@ -1,0 +1,135 @@
+# Traefik Dynamic Configuration
+# KALEN API Gateway — Middleware and Router Definitions
+#
+# This file is loaded by Traefik via the file provider defined
+# in traefik.yml. It configures middleware chains and non-Docker
+# routers for local development.
+#
+# In production, Docker labels on containers define routers;
+# this file mainly provides reusable middleware.
+
+http:
+  # ── Middleware Definitions ───────────────────────────────────
+
+  middlewares:
+    # Redirect HTTP to HTTPS
+    redirect-to-https:
+      redirectScheme:
+        scheme: https
+        permanent: true
+        port: "443"
+
+    # Rate limiting: 100 requests per second average, burst of 200
+    # Adjust values for production based on expected traffic
+    rate-limit:
+      rateLimit:
+        average: 100
+        burst: 200
+        period: 1s
+
+    # Security headers — applied to all routes
+    security-headers:
+      headers:
+        # Enable HSTS (6 months)
+        stsSeconds: 15768000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        # Prevent MIME-type sniffing
+        contentTypeNosniff: true
+        # Prevent clickjacking
+        frameDeny: true
+        # Control referrer information
+        referrerPolicy: strict-origin-when-cross-origin
+        # Permissions policy
+        permissionsPolicy: "camera=(), microphone=(self), geolocation=()"
+        # Custom browser XSS filter (legacy, but still useful)
+        browserXssFilter: true
+        # Remove Server header
+        customResponseHeaders:
+          Server: ""
+          X-Powered-By: ""
+
+    # CORS middleware for the KALEN API
+    # Allows the web client origin to make cross-origin requests
+    api-cors:
+      headers:
+        accessControlAllowMethods:
+          - GET
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
+          - OPTIONS
+        accessControlAllowOriginList:
+          - "${CORS_ORIGIN:-http://localhost:3000}"
+        accessControlAllowHeaders:
+          - Authorization
+          - Content-Type
+          - X-Request-ID
+        accessControlExposeHeaders:
+          - X-Request-ID
+        accessControlMaxAge: 86400
+        accessControlAllowCredentials: true
+
+    # Combined middleware chain for API routes
+    api-chain:
+      chain:
+        middlewares:
+          - security-headers
+          - rate-limit
+          - api-cors
+
+  # ── Router Definitions ──────────────────────────────────────
+  # These routers are for local development with /etc/hosts entries.
+  # In production, use Docker labels or Kubernetes IngressRoute.
+
+  routers:
+    # API router — api.kalen.local → KALEN API server
+    api-router:
+      rule: "Host(`api.kalen.local`)"
+      service: kalen-api
+      entryPoints:
+        - web
+      middlewares:
+        - api-chain
+      # Uncomment for HTTPS in production:
+      # tls:
+      #   certResolver: letsencrypt
+
+    # Web client router — app.kalen.local → Next.js web app
+    web-router:
+      rule: "Host(`app.kalen.local`)"
+      service: kalen-web
+      entryPoints:
+        - web
+      middlewares:
+        - security-headers
+      # Uncomment for HTTPS in production:
+      # tls:
+      #   certResolver: letsencrypt
+
+    # HTTP→HTTPS redirect router (catch-all for port 80)
+    http-to-https:
+      rule: "HostRegexp(`{any:.+}`)"
+      service: noop@file
+      entryPoints:
+        - web
+      middlewares:
+        - redirect-to-https
+      priority: 1
+
+  # ── Service Definitions ─────────────────────────────────────
+  # Manual service entries for non-Docker targets (local dev).
+
+  services:
+    # KALEN API server (NestJS)
+    kalen-api:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:4000"
+
+    # KALEN Web client (Next.js)
+    kalen-web:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:3000"

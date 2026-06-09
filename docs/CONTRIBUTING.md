@@ -12,7 +12,8 @@ KALEN is in **pre-alpha**. This means:
 
 - **The architecture is being actively shaped.** A PR that introduces a fundamental change to package boundaries or the identity model may be rejected even if the code is correct, because it conflicts with an in-progress design.
 - **Breaking changes happen.** We are not yet at a point where we guarantee API stability. If you build something on top of KALEN, expect breaking changes.
-- **Documentation is ahead of code.** Many features described in `docs/PRD.md` and `docs/design.md` are specified but not implemented. Do not assume something works just because it is documented.
+- **Documentation is ahead of code in some areas.** Many features described in `docs/PRD.md` and `docs/design.md` are specified but not implemented. Do not assume something works just because it is documented.
+- **Core libraries are implemented and tested.** The `@kalen/shared`, `@kalen/identity`, `@kalen/mcp-gateway`, and `@kalen/a2a-router` packages have 379 passing tests. The NestJS server and Next.js web client exist but use in-memory stores and simulated data.
 
 If this is acceptable to you, read on.
 
