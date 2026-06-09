@@ -1,6 +1,6 @@
 {
   "name": "kalen",
-  "version": "0.1.0",
+  "version": "0.2.0-alpha.1",
   "private": true,
   "description": "KALEN — Kinetic Autonomous Layer for Entity Networking",
   "license": "AGPL-3.0",
