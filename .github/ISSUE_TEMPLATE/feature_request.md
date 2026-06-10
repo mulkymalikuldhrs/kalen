@@ -1,37 +1,22 @@
 ---
 name: Feature Request
-about: Suggest a new feature or enhancement for KALEN
-title: "[FEATURE] "
-labels: enhancement, triage
-assignees: ""
+about: Suggest a feature or enhancement
+title: 'feat: '
+labels: enhancement
+assignees: ''
 ---
 
-## Feature Summary
-
-A clear and concise description of the feature you'd like to see.
-
 ## Problem Statement
-
-What problem does this feature solve? Is this a missing capability, a pain point, or a new use case?
-
-Example: "I'm always frustrated when [...]"
+What problem does this feature solve? What are you trying to accomplish?
 
 ## Proposed Solution
-
-Describe your proposed solution or approach. Be as specific as possible.
+How would you like this feature to work?
 
 ## Alternatives Considered
-
-A clear description of any alternative solutions or features you've considered.
+What other approaches have you considered?
 
 ## Additional Context
+Any screenshots, examples from other projects, or links that help explain your idea.
 
-- Does this relate to any existing KALEN pillars (Identity, Messaging, MCP, A2A)?
-- Are there any external protocols or standards this should align with?
-- Any relevant links, references, or screenshots?
-
-## Impact
-
-- **Users affected**: [All / Agents only / Admins only / Specific use case]
-- **Breaking changes**: [Yes / No — if yes, describe]
-- **Priority**: [Low / Medium / High / Critical]
+## Would you be willing to implement this?
+[ ] Yes, I'd like to submit a PR for this feature
