@@ -442,6 +442,22 @@ We take security seriously and will respond to verified reports promptly.
 
 ---
 
+
+
+## 🔗 Related Projects
+
+We're building a family of open source tools! Check out our other projects:
+
+| Project | Description | Stars |
+|---------|-------------|-------|
+| [📈 Quant-Nanggroe-AI](https://github.com/mulkymalikuldhrs/Quant-Nanggroe-AI) | AI-powered quantitative analysis for Nanggroe market | ⭐ |
+| [🧠 AI-MultiColony-Ecosystem](https://github.com/mulkymalikuldhrs/AI-MultiColony-Ecosystem) | Multi-agent AI colony simulation | ⭐ 3 |
+| [📋 Kalen](https://github.com/mulkymalikuldhrs/kalen) | Smart scheduling & AI task management | ⭐ |
+| [🤖 ProxyGateLLM](https://github.com/mulkymalikuldhrs/ProxyGateLLM) | Multi-LLM gateway with priority fallback | ⭐ 36 |
+| [🧩 Mnemosyne](https://github.com/mulkymalikuldhrs/mnemosyne) | Knowledge management & note-taking | ⭐ |
+
+🚀 **[Visit our Contributor Hub](https://mulkymalikuldhrs.github.io/contribute-to-our-projects/)** — 28 open source projects seeking contributors!
+
 ## License
 
 This project is licensed under the **GNU Affero General Public License v3.0** (AGPL-3.0).
@@ -495,3 +511,26 @@ See the [LICENSE](LICENSE) file for the full license text.
 <a href="https://github.com/mulkymalikuldhrs/kalen">
   <img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=100:1a1a1a,50:111111,0:000000&height=100&section=footer" />
 </a>
+
+
+<!-- Schema.org Structured Data for Search Engines -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareSourceCode",
+  "name": "kalen",
+  "author": {
+    "@type": "Person",
+    "name": "Mulky Malikul Adhr",
+    "url": "https://github.com/mulkymalikuldhrs"
+  },
+  "programmingLanguage": "TypeScript",
+  "license": "https://spdx.org/licenses/MIT",
+  "codeRepository": "https://github.com/mulkymalikuldhrs/kalen",
+  "contributor": {
+    "@type": "Organization",
+    "name": "Open Source Contributors",
+    "url": "https://mulkymalikuldhrs.github.io/contribute-to-our-projects/"
+  }
+}
+</script>
