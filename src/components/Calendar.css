@@ -1,0 +1,36 @@
+.calendar-container {
+  max-width: 800px;
+  margin: 40px auto;
+}
+
+.rbc-calendar {
+  border: 1px solid #ddd;
+}
+
+.rbc-header {
+  background-color: #f0f0f0;
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+}
+
+.rbc-header-label {
+  font-weight: bold;
+}
+
+.rbc-day-slot {
+  height: 40px;
+}
+
+.rbc-time-slot {
+  height: 40px;
+}
+
+.rbc-event {
+  border: 1px solid #ddd;
+  padding: 5px;
+  border-radius: 5px;
+}
+
+.rbc-event-content {
+  font-size: 14px;
+}
