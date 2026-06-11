@@ -36,7 +36,7 @@
     "jest": "^30.4.2",
     "lint-staged": "^15.0.0",
     "prettier": "^3.3.0",
-    "prettier-plugin-tailwindcss": "^0.6.0",
+    "prettier-plugin-tailwindcss": "^0.8.0",
     "ts-jest": "^29.4.11",
     "turbo": "^2.3.0",
     "typescript": "^5.7.0"
