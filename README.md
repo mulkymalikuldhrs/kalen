@@ -188,6 +188,136 @@ The A2A implementation currently follows a draft specification. Expect breaking 
 
 ---
 
+## Visual Architecture
+
+> Interactive Mermaid diagrams — viewable on GitHub. These illustrate the protocol design, identity model, and message flow at a glance.
+
+### Dual Identity Model
+
+```mermaid
+flowchart TB
+    subgraph KALEN["KALEN Identity Layer"]
+        direction TB
+
+        subgraph Human["👤 Human Entity"]
+            BioAuth[WebAuthn<br/>Biometrics / Security Key]
+            HumanUser[OpenIM User<br/>Standard account]
+            HumanMsg[Direct Messaging<br/>Group Channels<br/>Presence / Status]
+        end
+
+        subgraph Agent["🤖 Agent Entity"]
+            AgentAuth[WebAuthn<br/>Attestation Credential<br/>+ Agent Credential]
+            AgentUser[OpenIM User<br/>Agent type account]
+            AgentMsg[Direct Messaging<br/>Group Channels<br/>Availability / Capabilities]
+            AgentTools[MCP Tool Server<br/>Dynamic tool discovery]
+            AgentA2A[A2A Inter-Agent<br/>Discovery & Delegation]
+        end
+    end
+
+    BioAuth --> HumanUser --> HumanMsg
+    AgentAuth --> AgentUser --> AgentMsg
+    AgentUser --> AgentTools
+    AgentUser --> AgentA2A
+    HumanMsg <-->|Bidirectional| AgentMsg
+```
+
+### Protocol Abstraction
+
+```mermaid
+flowchart TB
+    subgraph Clients["Client Layer"]
+        HClient[Human Client]
+        AClient[Agent Client]
+    end
+
+    subgraph Abstraction["Protocol Abstraction Layer — Unified API"]
+        Normalizer[Message Normalizer<br/>Protocol-agnostic format]
+        Unified[Unified Messaging API<br/>Send / Receive / Subscribe]
+    end
+
+    subgraph Protocols["Protocol Handlers"]
+        direction LR
+        OpenIM[OpenIM SDK<br/>Real-time messaging<br/>Presence & groups]
+        WebAuthn[WebAuthn Auth<br/>Registration<br/>Verification]
+        MCPServer[MCP Server<br/>Tool discovery<br/>Invocation]
+        A2A[A2A Protocol<br/>Agent discovery<br/>Delegation]
+    end
+
+    subgraph Infra["Infrastructure"]
+        OpenIMSrv[OpenIM Server<br/>External — deployed separately]
+        AuthStore[Auth Store<br/>Credential storage]
+        ToolReg[Tool Registry<br/>Available tools]
+        AgentReg[Agent Registry<br/>Known agents]
+    end
+
+    Clients --> Abstraction
+    Normalizer --> Protocols
+    OpenIM --> OpenIMSrv
+    WebAuthn --> AuthStore
+    MCPServer --> ToolReg
+    A2A --> AgentReg
+```
+
+### Turborepo Architecture
+
+```mermaid
+flowchart TB
+    subgraph Monorepo["KALEN Turborepo Monorepo"]
+        direction TB
+
+        subgraph Apps["Applications"]
+            MainApp[Main App<br/>KALEN Platform]
+        end
+
+        subgraph Packages["NPM Packages"]
+            A2A["@kalen/a2a-router<br/>A2A protocol routing<br/>Agent discovery & delegation"]
+            Identity["@kalen/identity<br/>Dual identity model<br/>Human + Agent entities"]
+            MCP["@kalen/mcp-gateway<br/>MCP server gateway<br/>Tool discovery & invocation"]
+            Shared["@kalen/shared<br/>Shared types, utils<br/>Common interfaces"]
+        end
+    end
+
+    MainApp --> A2A
+    MainApp --> Identity
+    MainApp --> MCP
+    MainApp --> Shared
+    A2A --> Shared
+    Identity --> Shared
+    MCP --> Shared
+```
+
+### Message Flow
+
+```mermaid
+sequenceDiagram
+    participant H as 👤 Human Client
+    participant UAL as Unified API Layer
+    participant OI as OpenIM SDK
+    participant MCP as MCP Server
+    participant A2A as A2A Router
+    participant A as 🤖 Agent Client
+
+    H->>UAL: Send message to Agent
+    UAL->>OI: Route via OpenIM
+    OI->>A: Deliver message
+
+    A->>A: Parse intent
+    A->>MCP: Discover required tool
+    MCP-->>A: Tool available + schema
+    A->>MCP: Invoke tool
+
+    alt Task requires another agent
+        A->>A2A: Discover specialized agent
+        A2A-->>A: Found matching agent
+        A->>A2A: Delegate subtask
+        A2A->>A: Return subtask result
+    end
+
+    A->>OI: Send response
+    OI->>UAL: Route back
+    UAL->>H: Deliver response
+```
+
 ## Honest Notes
 
 > We believe in radical transparency. Here's what you need to know before using KALEN.
