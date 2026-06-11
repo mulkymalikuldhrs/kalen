@@ -366,6 +366,16 @@ sequenceDiagram
 
 ```bash
 # Clone the repository
+
+<!-- AUTO-PACKAGE-BADGES:START -->
+<!-- Auto-generated package badges -->
+
+![npm version](https://img.shields.io/npm/v/%40kalen%2Fa2a-router?style=flat-square&logo=npm&color=blue) ![npm downloads](https://img.shields.io/npm/dw/%40kalen%2Fa2a-router?style=flat-square&color=brightgreen) ![npm license](https://img.shields.io/npm/l/%40kalen%2Fa2a-router?style=flat-square) [![Deployed](https://img.shields.io/badge/deployed-0.1.0-blue?style=flat-square)](https://www.npmjs.com/package/@kalen/a2a-router)
+![npm version](https://img.shields.io/npm/v/%40kalen%2Fidentity?style=flat-square&logo=npm&color=blue) ![npm downloads](https://img.shields.io/npm/dw/%40kalen%2Fidentity?style=flat-square&color=brightgreen) ![npm license](https://img.shields.io/npm/l/%40kalen%2Fidentity?style=flat-square) [![Deployed](https://img.shields.io/badge/deployed-0.1.0-blue?style=flat-square)](https://www.npmjs.com/package/@kalen/identity)
+![npm version](https://img.shields.io/npm/v/%40kalen%2Fmcp-gateway?style=flat-square&logo=npm&color=blue) ![npm downloads](https://img.shields.io/npm/dw/%40kalen%2Fmcp-gateway?style=flat-square&color=brightgreen) ![npm license](https://img.shields.io/npm/l/%40kalen%2Fmcp-gateway?style=flat-square) [![Deployed](https://img.shields.io/badge/deployed-0.1.0-blue?style=flat-square)](https://www.npmjs.com/package/@kalen/mcp-gateway)
+![npm version](https://img.shields.io/npm/v/%40kalen%2Fshared?style=flat-square&logo=npm&color=blue) ![npm downloads](https://img.shields.io/npm/dw/%40kalen%2Fshared?style=flat-square&color=brightgreen) ![npm license](https://img.shields.io/npm/l/%40kalen%2Fshared?style=flat-square) [![Deployed](https://img.shields.io/badge/deployed-0.1.0-blue?style=flat-square)](https://www.npmjs.com/package/@kalen/shared)
+
+<!-- AUTO-PACKAGE-BADGES:END -->
 git clone https://github.com/mulkymalikuldhrs/kalen.git
 cd kalen
 
